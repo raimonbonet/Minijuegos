@@ -7,8 +7,8 @@ export declare class AuthController {
     }>;
     register(body: any): Promise<{
         name: string | null;
-        id: string;
         email: string;
+        id: string;
         googleId: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -18,9 +18,9 @@ export declare class AuthController {
         message: string;
         user: {
             name: string | null;
-            id: string;
             email: string;
             password: string | null;
+            id: string;
             googleId: string | null;
             createdAt: Date;
             updatedAt: Date;

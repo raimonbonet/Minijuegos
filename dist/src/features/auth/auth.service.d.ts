@@ -14,9 +14,9 @@ export declare class AuthService {
         message: string;
         user: {
             name: string | null;
-            id: string;
             email: string;
             password: string | null;
+            id: string;
             googleId: string | null;
             createdAt: Date;
             updatedAt: Date;
@@ -25,8 +25,8 @@ export declare class AuthService {
     }>;
     register(email: string, pass: string, name: string): Promise<{
         name: string | null;
-        id: string;
         email: string;
+        id: string;
         googleId: string | null;
         createdAt: Date;
         updatedAt: Date;

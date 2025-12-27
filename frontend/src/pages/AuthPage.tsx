@@ -46,7 +46,7 @@ export default function AuthPage() {
                 // Check profile status
                 const profile = await apiRequest('/auth/profile', { token: data.access_token });
 
-                if (!profile.membership) {
+                if (!profile.profileCompleted) {
                     navigate('/complete-profile');
                 } else {
                     window.location.href = '/';

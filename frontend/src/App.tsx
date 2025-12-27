@@ -9,7 +9,12 @@ import './App.css';
 // Simple protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.JSX.Element }) => {
   const token = localStorage.getItem('token');
-  if (!token) {
+
+  // Also check for token in URL (for Google OAuth callback)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlToken = urlParams.get('token');
+
+  if (!token && !urlToken) {
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -31,11 +36,7 @@ function App() {
         />
         <Route
           path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
+          element={<DashboardPage />}
         />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

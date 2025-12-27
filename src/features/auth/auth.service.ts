@@ -46,15 +46,16 @@ export class AuthService {
                 nombre: req.user.firstName,
                 apellidos: req.user.lastName,
                 username: `user_${req.user.googleId.substr(0, 8)}`, // Generate a unique username
+                profileCompleted: true,
             });
 
             isNewUser = true;
 
             // Initialize wallet for new user
             await this.walletService.createWallet(user.id);
-
-            // Send Welcome Email
-            await this.emailService.sendWelcomeEmail(user.email, `${user.nombre} ${user.apellidos}`);
+        } else if (!user.profileCompleted) {
+            // Ensure existing Google users have profileCompleted set
+            user = await this.usersService.updateProfile(user.id, { profileCompleted: true });
         }
 
         return {
@@ -63,6 +64,10 @@ export class AuthService {
             isNewUser,
             access_token: this.jwtService.sign({ email: user.email, sub: user.id }),
         };
+    }
+
+    async getFullProfile(userId: string) {
+        return this.usersService.findOne(userId);
     }
 
     async register(email: string, pass: string, username: string) {
@@ -117,6 +122,7 @@ export class AuthService {
                 fechaNacimiento: null,
                 sexo: null,
                 dni: null,
+                profileCompleted: false
             });
 
             // Initialize wallet
@@ -139,7 +145,18 @@ export class AuthService {
     }) {
         return this.usersService.updateProfile(userId, {
             ...data,
-            membership: true // Activate membership after full registration? Or just mark as complete.
+            profileCompleted: true
+        });
+    }
+
+    async changeUsername(userId: string, newUsername: string) {
+        const existingUser = await this.usersService.findOneByUsername(newUsername);
+        if (existingUser && existingUser.id !== userId) {
+            throw new InternalServerErrorException('El nombre de usuario ya está en uso');
+        }
+
+        return this.usersService.updateProfile(userId, {
+            username: newUsername
         });
     }
 }

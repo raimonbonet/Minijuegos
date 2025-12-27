@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
         
@@ -21,6 +21,7 @@ model User {
   sexo            String?
   creditos        Decimal  @default(0.0) @db.Decimal(10, 2)
   membership      Boolean  @default(false)
+  profileCompleted Boolean @default(false)
   dni             String?  @unique
   affiliateName   String?
   createdAt       DateTime @default(now())

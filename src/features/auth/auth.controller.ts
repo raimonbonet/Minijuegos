@@ -39,6 +39,12 @@ export class AuthController {
     @UseGuards(GoogleAuthGuard)
     async googleAuth(@Request() req) { }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('change-username')
+    async changeUsername(@Request() req, @Body('username') username: string) {
+        return this.authService.changeUsername(req.user.userId, username);
+    }
+
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     async googleAuthRedirect(@Request() req, @Response() res) {
@@ -60,7 +66,8 @@ export class AuthController {
 
     @UseGuards(JwtAuthGuard)
     @Get('profile')
-    getProfile(@Request() req) {
-        return req.user;
+    async getProfile(@Request() req) {
+        const user = await this.authService.getFullProfile(req.user.userId);
+        return user;
     }
 }

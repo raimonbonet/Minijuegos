@@ -12,6 +12,12 @@ export class UsersService {
         });
     }
 
+    async findOneByUsername(username: string): Promise<User | null> {
+        return this.prisma.user.findUnique({
+            where: { username },
+        });
+    }
+
     async findOneByGoogleId(googleId: string): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { googleId },
@@ -20,6 +26,13 @@ export class UsersService {
 
     async create(data: Prisma.UserCreateInput): Promise<User> {
         return this.prisma.user.create({
+            data,
+        });
+    }
+
+    async updateProfile(id: string, data: Partial<User>): Promise<User> {
+        return this.prisma.user.update({
+            where: { id },
             data,
         });
     }

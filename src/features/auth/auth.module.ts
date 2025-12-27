@@ -9,11 +9,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { WalletModule } from '../wallet/wallet.module';
+import { EmailModule } from '../../shared/email/email.module';
 
 @Module({
     imports: [
         UsersModule,
         WalletModule,
+        EmailModule,
         PassportModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],

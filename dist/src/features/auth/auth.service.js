@@ -47,15 +47,18 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const users_service_1 = require("../users/users.service");
 const wallet_service_1 = require("../wallet/wallet.service");
+const email_service_1 = require("../../shared/email/email.service");
 const bcrypt = __importStar(require("bcrypt"));
 let AuthService = class AuthService {
     usersService;
     jwtService;
     walletService;
-    constructor(usersService, jwtService, walletService) {
+    emailService;
+    constructor(usersService, jwtService, walletService, emailService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
         this.walletService = walletService;
+        this.emailService = emailService;
     }
     async validateUser(email, pass) {
         const user = await this.usersService.findOneByEmail(email);
@@ -73,33 +76,80 @@ let AuthService = class AuthService {
     }
     async googleLogin(req) {
         if (!req.user) {
-            return 'No user from google';
+            throw new common_1.InternalServerErrorException('No user from google');
         }
         let user = await this.usersService.findOneByGoogleId(req.user.googleId);
+        let isNewUser = false;
         if (!user) {
             user = await this.usersService.create({
                 email: req.user.email,
                 googleId: req.user.googleId,
-                name: `${req.user.firstName} ${req.user.lastName}`,
+                nombre: req.user.firstName,
+                apellidos: req.user.lastName,
+                username: `user_${req.user.googleId.substr(0, 8)}`,
             });
+            isNewUser = true;
             await this.walletService.createWallet(user.id);
+            await this.emailService.sendWelcomeEmail(user.email, `${user.nombre} ${user.apellidos}`);
         }
         return {
             message: 'User information from google',
             user,
+            isNewUser,
             access_token: this.jwtService.sign({ email: user.email, sub: user.id }),
         };
     }
-    async register(email, pass, name) {
+    async register(email, pass, username) {
+        const existingUser = await this.usersService.findOneByEmail(email);
+        if (existingUser) {
+            throw new common_1.InternalServerErrorException('User already exists');
+        }
         const hashedPassword = await bcrypt.hash(pass, 10);
-        const user = await this.usersService.create({
+        const verificationPayload = {
             email,
-            password: hashedPassword,
-            name,
+            username,
+            passwordHash: hashedPassword,
+            type: 'verification'
+        };
+        const token = this.jwtService.sign(verificationPayload, { expiresIn: '24h' });
+        await this.emailService.sendVerificationEmail(email, username, token);
+        return { message: 'Verification email sent' };
+    }
+    async verifyUser(token) {
+        console.log('DEBUG: verifyUser called with token:', token.substring(0, 10) + '...');
+        try {
+            const payload = this.jwtService.verify(token);
+            console.log('DEBUG: Token payload:', payload);
+            if (payload.type !== 'verification') {
+                console.error('DEBUG: Invalid token type:', payload.type);
+                throw new Error('Invalid token type');
+            }
+            const existingUser = await this.usersService.findOneByEmail(payload.email);
+            if (existingUser) {
+                return this.login(existingUser);
+            }
+            const user = await this.usersService.create({
+                email: payload.email,
+                password: payload.passwordHash,
+                username: payload.username,
+                nombre: null,
+                apellidos: null,
+                fechaNacimiento: null,
+                sexo: null,
+                dni: null,
+            });
+            await this.walletService.createWallet(user.id);
+            return this.login(user);
+        }
+        catch (error) {
+            throw new common_1.InternalServerErrorException('Invalid or expired verification token');
+        }
+    }
+    async completeProfile(userId, data) {
+        return this.usersService.updateProfile(userId, {
+            ...data,
+            membership: true
         });
-        await this.walletService.createWallet(user.id);
-        const { password, ...result } = user;
-        return result;
     }
 };
 exports.AuthService = AuthService;
@@ -107,6 +157,7 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [users_service_1.UsersService,
         jwt_1.JwtService,
-        wallet_service_1.WalletService])
+        wallet_service_1.WalletService,
+        email_service_1.EmailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

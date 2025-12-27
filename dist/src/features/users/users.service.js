@@ -22,6 +22,11 @@ let UsersService = class UsersService {
             where: { email },
         });
     }
+    async findOneByUsername(username) {
+        return this.prisma.user.findUnique({
+            where: { username },
+        });
+    }
     async findOneByGoogleId(googleId) {
         return this.prisma.user.findUnique({
             where: { googleId },
@@ -29,6 +34,12 @@ let UsersService = class UsersService {
     }
     async create(data) {
         return this.prisma.user.create({
+            data,
+        });
+    }
+    async updateProfile(id, data) {
+        return this.prisma.user.update({
+            where: { id },
             data,
         });
     }

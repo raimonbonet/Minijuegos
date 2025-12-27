@@ -6,26 +6,29 @@ export declare class AuthController {
         access_token: string;
     }>;
     register(body: any): Promise<{
-        name: string | null;
-        email: string;
+        message: string;
+    }>;
+    verify(token: string): Promise<{
+        access_token: string;
+    }>;
+    completeProfile(req: any, body: any): Promise<{
         id: string;
+        email: string;
+        username: string;
         googleId: string | null;
+        dni: string | null;
+        password: string | null;
+        nombre: string | null;
+        apellidos: string | null;
+        fechaNacimiento: Date | null;
+        sexo: string | null;
+        creditos: import("@prisma/client-runtime-utils").Decimal;
+        membership: boolean;
+        affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;
     googleAuth(req: any): Promise<void>;
-    googleAuthRedirect(req: any): Promise<"No user from google" | {
-        message: string;
-        user: {
-            name: string | null;
-            email: string;
-            password: string | null;
-            id: string;
-            googleId: string | null;
-            createdAt: Date;
-            updatedAt: Date;
-        };
-        access_token: string;
-    }>;
+    googleAuthRedirect(req: any, res: any): Promise<void>;
     getProfile(req: any): any;
 }

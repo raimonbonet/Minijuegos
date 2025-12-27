@@ -1,33 +1,66 @@
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { WalletService } from '../wallet/wallet.service';
+import { EmailService } from '../../shared/email/email.service';
 export declare class AuthService {
     private usersService;
     private jwtService;
     private walletService;
-    constructor(usersService: UsersService, jwtService: JwtService, walletService: WalletService);
+    private emailService;
+    constructor(usersService: UsersService, jwtService: JwtService, walletService: WalletService, emailService: EmailService);
     validateUser(email: string, pass: string): Promise<any>;
     login(user: any): Promise<{
         access_token: string;
     }>;
-    googleLogin(req: any): Promise<"No user from google" | {
+    googleLogin(req: any): Promise<{
         message: string;
         user: {
-            name: string | null;
-            email: string;
-            password: string | null;
             id: string;
+            email: string;
+            username: string;
             googleId: string | null;
+            dni: string | null;
+            password: string | null;
+            nombre: string | null;
+            apellidos: string | null;
+            fechaNacimiento: Date | null;
+            sexo: string | null;
+            creditos: import("@prisma/client-runtime-utils").Decimal;
+            membership: boolean;
+            affiliateName: string | null;
             createdAt: Date;
             updatedAt: Date;
         };
+        isNewUser: boolean;
         access_token: string;
     }>;
-    register(email: string, pass: string, name: string): Promise<{
-        name: string | null;
-        email: string;
+    register(email: string, pass: string, username: string): Promise<{
+        message: string;
+    }>;
+    verifyUser(token: string): Promise<{
+        access_token: string;
+    }>;
+    completeProfile(userId: string, data: {
+        nombre: string;
+        apellidos: string;
+        fechaNacimiento: Date;
+        dni: string;
+        sexo: string;
+        affiliateName?: string;
+    }): Promise<{
         id: string;
+        email: string;
+        username: string;
         googleId: string | null;
+        dni: string | null;
+        password: string | null;
+        nombre: string | null;
+        apellidos: string | null;
+        fechaNacimiento: Date | null;
+        sexo: string | null;
+        creditos: import("@prisma/client-runtime-utils").Decimal;
+        membership: boolean;
+        affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;
     }>;

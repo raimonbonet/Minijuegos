@@ -7,7 +7,8 @@ import {
     CreditCard,
     ArrowRight,
     Gamepad2,
-    CheckCircle
+    CheckCircle,
+    AtSign
 } from 'lucide-react';
 
 export default function CompleteProfilePage() {
@@ -18,6 +19,7 @@ export default function CompleteProfilePage() {
     const [userName, setUserName] = useState('');
 
     const [formData, setFormData] = useState({
+        username: '',
         nombre: '',
         apellidos: '',
         dni: '',
@@ -74,6 +76,21 @@ export default function CompleteProfilePage() {
                 }
             }
             // If no URL token, user is already authenticated (route is protected)
+            // Fetch current profile to pre-fill the username if it exists
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const profile = await apiRequest('/auth/profile');
+                    setFormData(prev => ({
+                        ...prev,
+                        username: profile.username || '',
+                        nombre: profile.nombre || '',
+                        apellidos: profile.apellidos || ''
+                    }));
+                } catch (err) {
+                    console.error('Error fetching profile:', err);
+                }
+            }
         };
 
         initVerification();
@@ -159,6 +176,22 @@ export default function CompleteProfilePage() {
                 ) : (
                     /* Form */
                     <form onSubmit={handleSubmit} className="p-8 space-y-5">
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                                <AtSign className="w-3 h-3" /> Alias de Operador (Nombre de Usuario)
+                            </label>
+                            <input
+                                type="text"
+                                name="username"
+                                required
+                                className="input-field border-indigo-500/30 bg-indigo-500/5 focus:border-indigo-500/60"
+                                placeholder="Tu alias unico..."
+                                value={formData.username}
+                                onChange={handleChange}
+                            />
+                            <p className="text-[10px] text-slate-500 italic">Este es el nombre que verán los demás jugadores.</p>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">

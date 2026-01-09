@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../lib/api';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
+import RegisterModal from '../components/RegisterModal';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,21 +92,27 @@ export default function LoginPage() {
                 <button
                     onClick={handleGoogleLogin}
                     type="button"
-                    className="w-full h-[60px] rounded-16 bg-white/5 border border-white/10 flex items-center justify-center gap-3 text-white font-black text-sm hover:bg-white/10 hover:border-indigo-500/50 hover:text-indigo-400 transition-all duration-300"
-                    style={{ borderRadius: '16px' }}
+                    className="btn-google h-[56px]"
                 >
-                    <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5 grayscale opacity-70" />
-                    ACCESO CON GOOGLE
+                    <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google" />
+                    <span>ACCESO CON GOOGLE</span>
                 </button>
 
                 <div className="mt-12 p-6 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 text-center">
                     <p className="text-slate-400 text-sm font-medium mb-4">
                         ¿Aún no tienes cuenta registrada?
                     </p>
-                    <Link to="/register" className="btn-primary-ghost w-full py-3 inline-block text-indigo-400 font-black uppercase tracking-widest text-xs hover:bg-indigo-500/10 rounded-xl transition-all border border-indigo-500/20">
+                    <button
+                        onClick={() => setIsRegisterOpen(true)}
+                        className="btn-primary-ghost w-full py-3 inline-block text-indigo-400 font-black uppercase tracking-widest text-xs hover:bg-indigo-500/10 rounded-xl transition-all border border-indigo-500/20 bg-transparent cursor-pointer"
+                    >
                         SOLICITAR ACCESO / REGISTRO
-                    </Link>
+                    </button>
                 </div>
+                <RegisterModal
+                    isOpen={isRegisterOpen}
+                    onClose={() => setIsRegisterOpen(false)}
+                />
             </div>
         </div>
     );

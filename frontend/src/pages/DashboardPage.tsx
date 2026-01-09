@@ -1,474 +1,243 @@
-import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, CheckCircle, User as UserIcon, LogIn, Coins, ShoppingBag, Zap, Trophy, Flame, Menu, X, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { User, LogIn, LogOut, Zap } from 'lucide-react';
 import { apiRequest } from '../lib/api';
+import AuthModal from '../components/AuthModal';
+
+// --- Shared Components (Would be in /components in real app) ---
+
+const Navbar = ({ user, onLoginClick, onLogoutClick }: { user: any, onLoginClick: () => void, onLogoutClick: () => void }) => (
+    <nav className="nav-glass fixed top-0 w-full z-50 h-16 px-4 flex items-center justify-between">
+        {/* Brand */}
+        <div className="flex items-center gap-2">
+            <span className="text-2xl font-black tracking-tighter uppercase italic bg-gradient-to-r from-[var(--blaze-neon)] via-[#fff] to-[var(--kai-green)] text-transparent bg-clip-text drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                Zooplay
+            </span>
+        </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-4">
+            {user ? (
+                <>
+                    {/* Wallet */}
+                    <div className="flex items-center gap-2 bg-[var(--bg-panel)] px-4 py-1.5 rounded-full border border-[var(--zoin-gold)]/30 shadow-[0_0_15px_rgba(255,215,0,0.15)] hover:border-[var(--zoin-gold)] transition-colors cursor-pointer">
+                        <img src="/zoins_icon.jpg" alt="Zoins" className="w-5 h-5 rounded-full object-cover" />
+                        <span className="font-black text-xl text-[var(--zoin-gold)] tracking-tight font-mono">{user.wallet?.credits || 0}</span>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-6 w-px bg-white/10 mx-1"></div>
+
+                    {/* User Info */}
+                    <div className="flex items-center gap-3">
+                        <span className="hidden md:block text-sm font-bold text-white/90">
+                            {user.name || user.username || user.full_name || user.email?.split('@')[0]}
+                        </span>
+
+                        {/* Profile Button (Non-functional for now, acting as visual) */}
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--bg-panel)] to-black border border-white/10 flex items-center justify-center shadow-lg">
+                            <User className="w-4 h-4 text-white/80" />
+                        </div>
+
+                        {/* Logout Button */}
+                        <button
+                            onClick={onLogoutClick}
+                            className="p-2 rounded-lg text-white/30 hover:text-red-400 hover:bg-white/5 transition-all"
+                            title="Cerrar Sesión"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
+                </>
+            ) : (
+                <button
+                    onClick={onLoginClick}
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-white/10 to-white/5 border border-white/10 text-white font-black text-xs uppercase tracking-widest rounded transition-all hover:bg-white/20 hover:border-white/30 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] backdrop-blur-md"
+                >
+                    <LogIn className="w-3 h-3" />
+                    <span className="hidden sm:block">Acceder</span>
+                </button>
+            )}
+        </div>
+    </nav>
+);
+
+const GameCard = ({ title, category, image, active, isVip, onClick }: { title: string, category: string, image?: string, active?: boolean, isVip?: boolean, onClick?: () => void }) => (
+    <div onClick={onClick} className={`relative group overflow-hidden rounded-xl aspect-[3/4] cursor-pointer transition-all duration-300 ${active ? 'ring-2 ring-[var(--blaze-neon)] shadow-[0_0_30px_rgba(0,240,255,0.4)] z-10 scale-[1.02]' : 'opacity-80 hover:opacity-100 hover:scale-105 hover:shadow-[0_0_20px_rgba(0,240,255,0.2)]'}`}>
+        {/* Background Image Placeholder */}
+        <div className="absolute inset-0 bg-[#050505]">
+            {image && <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-100" />}
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
+        </div>
+
+        {/* Content */}
+        <div className="absolute bottom-0 left-0 w-full p-5">
+            <div className="flex items-center gap-2 mb-2">
+                <span className="text-[9px] font-black text-black bg-[var(--blaze-neon)] px-1.5 py-0.5 rounded-sm uppercase tracking-wider">{category}</span>
+                {isVip && <span className="text-[9px] font-black text-black bg-[var(--zoin-gold)] px-1.5 py-0.5 rounded-sm uppercase tracking-wider animate-pulse">VIP</span>}
+            </div>
+            <h3 className="text-xl font-black text-white leading-none uppercase italic drop-shadow-md">{title}</h3>
+
+            {active && (
+                <div className="mt-2 w-full h-0.5 bg-[var(--blaze-neon)] shadow-[0_0_10px_var(--blaze-neon)]" />
+            )}
+        </div>
+    </div>
+);
+
+const MarketCard = ({ name, price, image }: { name: string, price: number, image?: string }) => (
+    <div className="glass-panel p-3 rounded-2xl flex flex-col group cursor-pointer hover:bg-white/5 transition-all hover:-translate-y-1 hover:border-[var(--kai-green)]/50">
+        <div className="aspect-square w-full rounded-xl bg-black/40 mb-3 overflow-hidden relative border border-white/5">
+            {image && <img src={image} alt={name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />}
+            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 flex items-center gap-1">
+                <img src="/zoins_icon.jpg" alt="Z" className="w-3 h-3 rounded-full" />
+                <span className="text-[var(--zoin-gold)] font-black text-xs">{price}</span>
+            </div>
+        </div>
+        <div>
+            <h4 className="text-sm font-bold text-white group-hover:text-[var(--kai-green)] transition-colors leading-tight mb-1">{name}</h4>
+            <span className="text-[10px] text-[var(--kai-green)] font-bold uppercase tracking-wider border border-[var(--kai-green)]/30 px-1.5 py-0.5 rounded-md bg-[var(--kai-green)]/10">Exclusivo</span>
+        </div>
+    </div>
+);
+
+// --- Main Page ---
 
 export default function DashboardPage() {
     const navigate = useNavigate();
     const [user, setUser] = useState<any>(null);
-    const [showWelcome, setShowWelcome] = useState(false);
-    const [welcomeName, setWelcomeName] = useState('');
-    const [newUsername, setNewUsername] = useState('');
-    const [savingUsername, setSavingUsername] = useState(false);
-    const [activeTab, setActiveTab] = useState('juegos');
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isLoginOpen, setIsLoginOpen] = useState(false);
-    const [loginEmail, setLoginEmail] = useState('');
-    const [loginPassword, setLoginPassword] = useState('');
-    const [loggingIn, setLoggingIn] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+    // Auth Simulation (Connecting to real backend)
     useEffect(() => {
-        const searchParams = new URLSearchParams(window.location.search);
-        const token = searchParams.get('token');
-        const welcome = searchParams.get('welcome');
-        const name = searchParams.get('name');
-
+        const token = new URLSearchParams(window.location.search).get('token') || localStorage.getItem('token');
         if (token) {
             localStorage.setItem('token', token);
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        if (welcome === 'true' && name) {
-            setShowWelcome(true);
-            setWelcomeName(decodeURIComponent(name));
-        }
-
         async function loadUser() {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-
+            const currentToken = localStorage.getItem('token');
+            if (!currentToken) { setLoading(false); return; }
             try {
                 const profile = await apiRequest('/auth/profile');
                 setUser(profile);
-                setNewUsername(profile.username || '');
-                if (!profile.profileCompleted) {
-                    navigate('/complete-profile');
-                }
             } catch (e) {
                 console.error(e);
                 localStorage.removeItem('token');
+            } finally {
+                setLoading(false);
             }
         }
         loadUser();
     }, [navigate]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-        navigate('/');
-    };
-
-    const handleInlineLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoggingIn(true);
-        try {
-            const data = await apiRequest('/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-            });
-            localStorage.setItem('token', data.access_token);
-            setIsLoginOpen(false);
-            const profile = await apiRequest('/auth/profile');
-            setUser(profile);
-        } catch (error: any) {
-            alert(error.message || 'Error en el inicio de sesión');
-        } finally {
-            setLoggingIn(false);
-        }
-    };
-
-    const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:3000/auth/google';
-    };
-
-    const handleSaveUsername = async () => {
-        setSavingUsername(true);
-        try {
-            await apiRequest('/auth/change-username', {
-                method: 'POST',
-                body: JSON.stringify({ username: newUsername })
-            });
-            setShowWelcome(false);
-            const profile = await apiRequest('/auth/profile');
-            setUser(profile);
-        } catch (error: any) {
-            alert(error.message || 'Error al actualizar el nombre de usuario');
-        } finally {
-            setSavingUsername(false);
-        }
-    };
-
-    const handleSkipUsername = () => {
-        setShowWelcome(false);
-    };
-
-    const toggleMenu = () => {
-        setIsMenuOpen(!isMenuOpen);
-    };
-
-    const toggleLogin = () => {
-        setIsLoginOpen(!isLoginOpen);
-    };
-
-    const selectTab = (tab: string) => {
-        setActiveTab(tab);
-        setIsMenuOpen(false);
-    };
-
-    // Games data
-    const games = [
-        {
-            id: 1,
-            title: 'Star Odyssey',
-            category: 'Acción / Espacio',
-            image: '/space_shooter_cover_1766842874682.png',
-            trending: true
-        },
-        {
-            id: 2,
-            title: 'Mystic Quest',
-            category: 'Fantasía / RPG',
-            image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&q=80&w=1000'
-        },
-        {
-            id: 3,
-            title: 'Cyber Drift',
-            category: 'Carreras / Neon',
-            image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&q=80&w=1000',
-            new: true
-        },
-        {
-            id: 4,
-            title: 'Ancient Shadows',
-            category: 'Aventura / Puzle',
-            image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=1000'
-        }
-    ];
-
-    // Market data
-    const marketItems = [
-        {
-            id: 1,
-            name: 'Skin Legendaria: Fuego',
-            price: 500,
-            image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=500'
-        },
-        {
-            id: 2,
-            name: 'Pack de 10 Boosters',
-            price: 200,
-            image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?auto=format&fit=crop&q=80&w=500'
-        },
-        {
-            id: 3,
-            name: 'Espada de Cristal',
-            price: 1200,
-            image: 'https://images.unsplash.com/photo-1595113316349-9fa4ee24ef88?auto=format&fit=crop&q=80&w=500'
-        },
-        {
-            id: 4,
-            name: 'Mascota: Dragoncito',
-            price: 3000,
-            image: 'https://images.unsplash.com/photo-1559124391-7d5c9ee76d11?auto=format&fit=crop&q=80&w=500'
-        }
-    ];
-
-    if (showWelcome) {
-        return (
-            <div className="flex items-center justify-center min-h-screen p-4">
-                <div className="glass-card w-full max-w-md animate-in text-center">
-                    <div className="flex justify-center mb-6">
-                        <CheckCircle className="w-20 h-20 text-indigo-400 animate-pulse" />
-                    </div>
-                    <div className="space-y-6">
-                        <div>
-                            <h2 className="text-3xl font-black text-white uppercase tracking-tighter">
-                                ¡Bienvenido, {welcomeName}!
-                            </h2>
-                            <p className="text-slate-400 mt-2">
-                                Tu cuenta ha sido verificada en el sistema.
-                            </p>
-                        </div>
-                        <div className="text-left space-y-2">
-                            <label className="text-xs font-bold text-indigo-400 uppercase tracking-widest pl-1">
-                                Alias de Operador
-                            </label>
-                            <input
-                                type="text"
-                                className="input-field"
-                                value={newUsername}
-                                onChange={(e) => setNewUsername(e.target.value)}
-                                placeholder="Ingresa tu alias..."
-                            />
-                        </div>
-                        <div className="pt-4 space-y-3">
-                            <button
-                                onClick={handleSaveUsername}
-                                disabled={savingUsername}
-                                className="btn-primary w-full"
-                            >
-                                {savingUsername ? 'Asignando...' : 'INICIAR SESIÓN'}
-                            </button>
-                            <button
-                                onClick={handleSkipUsername}
-                                className="w-full text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
-                            >
-                                Omitir por ahora
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    const NavigationLinks = () => (
-        <>
-            <button
-                onClick={() => selectTab('juegos')}
-                className={`nav-item ${activeTab === 'juegos' ? 'active' : ''}`}
-            >
-                <Zap className="w-4 h-4 mr-2 text-indigo-400" />
-                JUEGOS
-            </button>
-            <button
-                onClick={() => selectTab('mercado')}
-                className={`nav-item ${activeTab === 'mercado' ? 'active' : ''}`}
-            >
-                <ShoppingBag className="w-4 h-4 mr-2 text-indigo-400" />
-                MERCADO
-            </button>
-            <button
-                onClick={() => selectTab('ranking')}
-                className={`nav-item ${activeTab === 'ranking' ? 'active' : ''}`}
-            >
-                <Trophy className="w-4 h-4 mr-2 text-indigo-400" />
-                RANKING
-            </button>
-            <button
-                onClick={() => selectTab('suscripciones')}
-                className={`nav-item ${activeTab === 'suscripciones' ? 'active' : ''}`}
-            >
-                <Flame className="w-4 h-4 mr-2 text-indigo-400" />
-                SUSCRIPCIONES
-            </button>
-        </>
-    );
-
     return (
-        <div className="w-full min-h-screen flex flex-col items-stretch">
-            {/* Immersive Hero Section */}
-            <header className="banner flex flex-col items-center justify-center">
-                <div className="animate-in flex flex-col items-center">
-                    <h1 className="leading-none">MiniJuegos</h1>
-                </div>
-            </header>
+        <div className="min-h-screen pb-32">
+            <Navbar
+                user={user}
+                onLoginClick={() => setIsAuthModalOpen(true)}
+                onLogoutClick={() => { localStorage.removeItem('token'); setUser(null); }}
+            />
 
-            {/* HUD Navigation Bar */}
-            <nav className="nav-bar">
-                <div className="nav-container">
-                    <div className="flex items-center">
-                        <button className="menu-toggle" onClick={toggleMenu}>
-                            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                        </button>
-                        <div className="nav-links">
-                            <NavigationLinks />
-                        </div>
-                    </div>
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setIsAuthModalOpen(false)}
+                onSuccess={(newUser) => {
+                    setUser(newUser);
+                    setIsAuthModalOpen(false);
+                }}
+            />
 
-                    <div className="flex items-center h-full relative">
-                        {user ? (
-                            <div className="user-nav-block">
-                                <div className="credits-pill">
-                                    <Coins className="w-4 h-4" />
-                                    <span>{user.wallet?.credits || 0}</span>
-                                </div>
+            {/* Main Content Container */}
+            <main className="pt-24 px-4 max-w-lg mx-auto md:max-w-5xl lg:max-w-6xl space-y-16">
 
-                                <div className="nav-user-info">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/30 overflow-hidden">
-                                        <UserIcon className="w-5 h-5 text-indigo-400" />
-                                    </div>
-                                    <div className="hidden sm:flex flex-col leading-tight">
-                                        <span className="text-sm font-bold text-white truncate max-w-[100px]">
-                                            {user.username || user.email.split('@')[0]}
-                                        </span>
-                                    </div>
-                                </div>
+                {/* Hero / Welcome */}
+                <header className="text-center space-y-4 py-8">
+                    <h1 className="text-4xl md:text-6xl font-black text-white uppercase italic tracking-tighter">
+                        Compite. <span className="text-[var(--zoin-gold)] drop-shadow-[0_0_15px_rgba(255,215,0,0.3)]">Gana.</span>
+                    </h1>
+                    <p className="text-white/50 text-sm md:text-lg max-w-md mx-auto font-medium">
+                        La plataforma de eSports casual definitiva.
+                    </p>
+                </header>
 
-                                <button
-                                    onClick={handleLogout}
-                                    className="btn-icon-nav"
-                                    title="Desconectar"
-                                >
-                                    <LogOut className="w-5 h-5" />
-                                </button>
+                {/* BLAZE ZONE: Games */}
+                <section className="space-y-6 relative">
+                    {/* Section Header */}
+                    <div className="flex items-end justify-between border-b border-[var(--blaze-neon)]/20 pb-4">
+                        <div className="flex items-center gap-3">
+                            <Zap className="w-6 h-6 text-[var(--blaze-neon)]" />
+                            <div>
+                                <h2 className="text-2xl font-black uppercase tracking-tight italic text-white">Arena de Juegos</h2>
+                                <p className="text-xs text-[var(--blaze-neon)] font-bold">ZONA COMPETITIVA</p>
                             </div>
-                        ) : (
-                            <div className="relative">
-                                <button
-                                    onClick={toggleLogin}
-                                    className={`btn-primary ${isLoginOpen ? 'ring-2 ring-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.3)]' : ''}`}
-                                >
-                                    <LogIn className="w-4 h-4 mr-2" />
-                                    ACCESO / REGISTRO
-                                </button>
+                        </div>
+                        <span className="text-xs text-white/50 font-bold hover:text-white cursor-pointer transition-colors">VER RANKING ABSOLUTO &rarr;</span>
+                    </div>
 
-                                {isLoginOpen && (
-                                    <div className="login-dropdown">
-                                        <h3 className="text-white font-black uppercase tracking-tighter mb-6 text-xl">
-                                            Acceso <span className="text-indigo-500">Rápido</span>
-                                        </h3>
-                                        <form onSubmit={handleInlineLogin} className="space-y-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-1">Email</label>
-                                                <input
-                                                    type="email"
-                                                    className="input-field"
-                                                    placeholder="correo@ejemplo.com"
-                                                    value={loginEmail}
-                                                    onChange={(e) => setLoginEmail(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest pl-1">Contraseña</label>
-                                                <input
-                                                    type="password"
-                                                    className="input-field"
-                                                    placeholder="••••••••"
-                                                    value={loginPassword}
-                                                    onChange={(e) => setLoginPassword(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
-                                            <button
-                                                disabled={loggingIn}
-                                                type="submit"
-                                                className="btn-primary w-full h-12 text-sm mt-2"
-                                            >
-                                                {loggingIn ? 'ENTRANDO...' : 'INICIAR SESIÓN'}
-                                            </button>
-                                        </form>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                        <GameCard
+                            title="Neon Match"
+                            category="Puzzle"
+                            image="/blaze_v5.png" // V5 (User Preference)
+                            active={true}
+                            isVip={true}
+                            onClick={() => navigate('/game/neon-match')} // Link to game
+                        />
+                        <GameCard
+                            title="Cyber Drift"
+                            category="Racing"
+                            image="/cyber_game_cover.png"
+                        />
+                        <GameCard
+                            title="Pixel Raid"
+                            category="Acción"
+                            image="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=500"
+                        />
+                        <GameCard
+                            title="Void Hunter"
+                            category="Estrategia"
+                            image="https://images.unsplash.com/photo-1535025183041-0991a977e25b?auto=format&fit=crop&q=80&w=500"
+                        />
+                    </div>
+                </section>
 
-                                        <div className="dropdown-divider"></div>
+                {/* KAI ZONE: Market/VIP */}
+                <section className="relative pt-8">
+                    {/* Background decoration for Kai Section */}
+                    <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-b from-[var(--kai-green)]/5 to-transparent -z-10 rounded-3xl blur-3xl opacity-50" />
 
-                                        <button
-                                            onClick={handleGoogleLogin}
-                                            className="btn-google"
-                                        >
-                                            <img src="https://www.google.com/favicon.ico" alt="Google" />
-                                            <span>ACCEDER CON GOOGLE</span>
-                                        </button>
+                    <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
+                        {/* Kai Floating Illustration (User Provided) */}
+                        <div className="relative w-32 md:w-48 shrink-0 hover-float">
+                            <img src="/kai_v3.png" alt="Kai" className="w-full drop-shadow-[0_0_30px_rgba(16,185,129,0.3)]" />
+                        </div>
 
-                                        <div className="mt-6 text-center">
-                                            <p className="text-slate-500 text-[10px] mb-2 font-bold uppercase tracking-widest">¿No tienes cuenta?</p>
-                                            <Link
-                                                to="/register"
-                                                className="text-indigo-400 hover:text-indigo-300 font-black text-xs uppercase tracking-tighter"
-                                                onClick={() => setIsLoginOpen(false)}
-                                            >
-                                                CREAR NUEVA CUENTA
-                                                <ArrowRight className="w-3 h-3 inline ml-1" />
-                                            </Link>
-                                        </div>
-                                    </div>
-                                )}
+                        <div className="w-full">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h2 className="text-2xl font-black uppercase tracking-tight text-white flex items-center gap-2">
+                                        Kai's Market <span className="text-xs bg-[var(--kai-green)] text-black px-2 py-0.5 rounded font-bold tracking-widest">OPEN</span>
+                                    </h2>
+                                    <p className="text-sm text-[var(--kai-green)]">Canjea tus victorias por premios reales.</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="px-3 py-1 bg-white/5 rounded border border-white/10 text-xs font-bold text-white hover:bg-white/10 cursor-pointer">Filtrar por Precio</div>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                </div>
-                {/* Mobile Dropdown */}
-                {isMenuOpen && (
-                    <div className="mobile-menu">
-                        <NavigationLinks />
-                    </div>
-                )}
-            </nav>
 
-            {/* Main Content Area */}
-            <main className="flex-1 w-full bg-slate-900/10 pb-32">
-                {activeTab === 'juegos' && (
-                    <div className="max-w-[1400px] mx-auto px-6 mt-12">
-                        <div className="game-grid animate-in">
-                            {games.map((game) => (
-                                <div key={game.id} className="game-card group">
-                                    <img src={game.image} alt={game.title} />
-                                    {game.trending && (
-                                        <div className="absolute top-6 right-6 px-4 py-2 rounded-full bg-orange-500/90 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-2xl z-10 backdrop-blur-md">
-                                            <Flame className="w-3 h-3" /> Tendencia
-                                        </div>
-                                    )}
-                                    {game.new && (
-                                        <div className="absolute top-6 right-6 px-4 py-2 rounded-full bg-indigo-500/90 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-2xl z-10 backdrop-blur-md">
-                                            <Zap className="w-3 h-3" /> Nuevo
-                                        </div>
-                                    )}
-                                    <div className="game-overlay">
-                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">{game.category}</span>
-                                        <h3>{game.title}</h3>
-                                        <p className="text-slate-400 text-sm line-clamp-1 opacity-60 group-hover:opacity-100 transition-opacity">Únete a miles de jugadores en esta aventura espacial sin precedentes.</p>
-                                        <div className="flex gap-4 mt-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                                            <button className="btn-primary text-xs py-3 px-8 flex-1">JUGAR AHORA</button>
-                                            <button className="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-                                                <Trophy className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                                <MarketCard name="Bono de Tiempo x10" price={500} image="https://images.unsplash.com/photo-1614680376593-902f74cf0d41?auto=format&fit=crop&w=300&q=80" />
+                                <MarketCard name="Avatar: Golden Tiger" price={1200} image="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80" />
+                                <MarketCard name="Entrada Torneo" price={250} image="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=300&q=80" />
+                                <MarketCard name="Pack Misterioso" price={800} image="https://images.unsplash.com/photo-1605806616949-1e87b487bc2a?auto=format&fit=crop&w=300&q=80" />
+                            </div>
                         </div>
                     </div>
-                )}
+                </section>
 
-                {activeTab === 'mercado' && (
-                    <div className="max-w-[1400px] mx-auto px-6 mt-12">
-                        <div className="market-grid animate-in">
-                            {marketItems.map((item) => (
-                                <div key={item.id} className="item-card group">
-                                    <div className="item-img-container p-4">
-                                        <img src={item.image} alt={item.name} className="rounded-2xl" />
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="text-white font-bold mb-1 truncate w-[160px]">{item.name}</h3>
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">OBJETO ÉPICO</span>
-                                            </div>
-                                            <div className="price-tag">
-                                                <Coins className="w-3 h-3" />
-                                                <span>{item.price}</span>
-                                            </div>
-                                        </div>
-                                        <button className="btn-buy flex items-center justify-center gap-2">
-                                            <Zap className="w-4 h-4" />
-                                            ADQUIRIR
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'ranking' && (
-                    <div className="flex flex-col items-center justify-center py-32 text-center animate-in">
-                        <div className="w-24 h-24 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-8">
-                            <Trophy className="w-12 h-12 text-indigo-400" />
-                        </div>
-                        <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-4">Salón de la Fama</h2>
-                        <p className="text-slate-500 max-w-md mx-auto">El sistema está procesando las puntuaciones globales. El ranking de temporada se activará en 24 horas.</p>
-                    </div>
-                )}
-
-                {activeTab === 'suscripciones' && (
-                    <div className="flex flex-col items-center justify-center py-32 text-center animate-in">
-                        <div className="w-24 h-24 rounded-3xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-8">
-                            <Flame className="w-12 h-12 text-orange-400" />
-                        </div>
-                        <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter mb-4">Suscripciones</h2>
-                        <p className="text-slate-500 max-w-md mx-auto">Próximamente podrás suscribirte para obtener beneficios exclusivos y créditos mensuales.</p>
-                    </div>
-                )}
             </main>
         </div>
     );

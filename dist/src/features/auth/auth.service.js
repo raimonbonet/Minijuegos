@@ -87,10 +87,13 @@ let AuthService = class AuthService {
                 nombre: req.user.firstName,
                 apellidos: req.user.lastName,
                 username: `user_${req.user.googleId.substr(0, 8)}`,
+                profileCompleted: false,
             });
             isNewUser = true;
             await this.walletService.createWallet(user.id);
-            await this.emailService.sendWelcomeEmail(user.email, `${user.nombre} ${user.apellidos}`);
+        }
+        else if (!user.profileCompleted) {
+            user = await this.usersService.updateProfile(user.id, { profileCompleted: true });
         }
         return {
             message: 'User information from google',
@@ -98,6 +101,9 @@ let AuthService = class AuthService {
             isNewUser,
             access_token: this.jwtService.sign({ email: user.email, sub: user.id }),
         };
+    }
+    async getFullProfile(userId) {
+        return this.usersService.findOne(userId);
     }
     async register(email, pass, username) {
         const existingUser = await this.usersService.findOneByEmail(email);
@@ -116,12 +122,9 @@ let AuthService = class AuthService {
         return { message: 'Verification email sent' };
     }
     async verifyUser(token) {
-        console.log('DEBUG: verifyUser called with token:', token.substring(0, 10) + '...');
         try {
             const payload = this.jwtService.verify(token);
-            console.log('DEBUG: Token payload:', payload);
             if (payload.type !== 'verification') {
-                console.error('DEBUG: Invalid token type:', payload.type);
                 throw new Error('Invalid token type');
             }
             const existingUser = await this.usersService.findOneByEmail(payload.email);
@@ -137,6 +140,7 @@ let AuthService = class AuthService {
                 fechaNacimiento: null,
                 sexo: null,
                 dni: null,
+                profileCompleted: false
             });
             await this.walletService.createWallet(user.id);
             return this.login(user);
@@ -146,9 +150,23 @@ let AuthService = class AuthService {
         }
     }
     async completeProfile(userId, data) {
+        const existingUser = await this.usersService.findOneByUsername(data.username);
+        if (existingUser && existingUser.id !== userId) {
+            throw new common_1.InternalServerErrorException('El nombre de usuario ya está en uso');
+        }
         return this.usersService.updateProfile(userId, {
             ...data,
-            membership: true
+            profileCompleted: true
+        });
+    }
+    async changeUsername(userId, newUsername) {
+        const existingUser = await this.usersService.findOneByUsername(newUsername);
+        if (existingUser && existingUser.id !== userId) {
+            throw new common_1.InternalServerErrorException('El nombre de usuario ya está en uso');
+        }
+        return this.usersService.updateProfile(userId, {
+            username: newUsername,
+            profileCompleted: true
         });
     }
 };

@@ -32,6 +32,7 @@ let AuthController = class AuthController {
     }
     async completeProfile(req, body) {
         return this.authService.completeProfile(req.user.userId, {
+            username: body.username,
             nombre: body.nombre,
             apellidos: body.apellidos,
             fechaNacimiento: new Date(body.fechaNacimiento),
@@ -41,6 +42,9 @@ let AuthController = class AuthController {
         });
     }
     async googleAuth(req) { }
+    async changeUsername(req, username) {
+        return this.authService.changeUsername(req.user.userId, username);
+    }
     async googleAuthRedirect(req, res) {
         const result = await this.authService.googleLogin(req);
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -54,8 +58,9 @@ let AuthController = class AuthController {
             res.redirect(`${frontendUrl}/?token=${token}`);
         }
     }
-    getProfile(req) {
-        return req.user;
+    async getProfile(req) {
+        const user = await this.authService.getFullProfile(req.user.userId);
+        return user;
     }
 };
 exports.AuthController = AuthController;
@@ -99,6 +104,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleAuth", null);
 __decorate([
+    (0, common_1.UseGuards)(auth_guards_1.JwtAuthGuard),
+    (0, common_1.Post)('change-username'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)('username')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "changeUsername", null);
+__decorate([
     (0, common_1.Get)('google/callback'),
     (0, common_1.UseGuards)(auth_guards_1.GoogleAuthGuard),
     __param(0, (0, common_1.Request)()),
@@ -113,7 +127,7 @@ __decorate([
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "getProfile", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),

@@ -20,7 +20,7 @@ model User {
   fechaNacimiento DateTime?
   sexo            String?
   creditos        Decimal  @default(0.0) @db.Decimal(10, 2)
-  membership      Boolean  @default(false)
+  membership      MembershipType @default(FREE)
   profileCompleted Boolean @default(false)
   dni             String?  @unique
   affiliateName   String?
@@ -59,4 +59,11 @@ enum TransactionType {
   WITHDRAWAL
   PAYMENT
   REFUND
+}
+
+enum MembershipType {
+  FREE
+  STARTER
+  PRO
+  LEGENDARY
 }

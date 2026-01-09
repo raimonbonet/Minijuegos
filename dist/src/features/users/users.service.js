@@ -20,6 +20,7 @@ let UsersService = class UsersService {
     async findOneByEmail(email) {
         return this.prisma.user.findUnique({
             where: { email },
+            include: { wallet: true }
         });
     }
     async findOneByUsername(username) {
@@ -46,6 +47,7 @@ let UsersService = class UsersService {
     async findOne(id) {
         return this.prisma.user.findUnique({
             where: { id },
+            include: { wallet: true }
         });
     }
 };

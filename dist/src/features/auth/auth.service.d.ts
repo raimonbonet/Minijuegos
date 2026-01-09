@@ -26,7 +26,8 @@ export declare class AuthService {
             fechaNacimiento: Date | null;
             sexo: string | null;
             creditos: import("@prisma/client-runtime-utils").Decimal;
-            membership: boolean;
+            membership: import("@prisma/client").$Enums.MembershipType;
+            profileCompleted: boolean;
             affiliateName: string | null;
             createdAt: Date;
             updatedAt: Date;
@@ -34,6 +35,24 @@ export declare class AuthService {
         isNewUser: boolean;
         access_token: string;
     }>;
+    getFullProfile(userId: string): Promise<{
+        id: string;
+        email: string;
+        username: string;
+        googleId: string | null;
+        dni: string | null;
+        password: string | null;
+        nombre: string | null;
+        apellidos: string | null;
+        fechaNacimiento: Date | null;
+        sexo: string | null;
+        creditos: import("@prisma/client-runtime-utils").Decimal;
+        membership: import("@prisma/client").$Enums.MembershipType;
+        profileCompleted: boolean;
+        affiliateName: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    } | null>;
     register(email: string, pass: string, username: string): Promise<{
         message: string;
     }>;
@@ -41,6 +60,7 @@ export declare class AuthService {
         access_token: string;
     }>;
     completeProfile(userId: string, data: {
+        username: string;
         nombre: string;
         apellidos: string;
         fechaNacimiento: Date;
@@ -59,7 +79,26 @@ export declare class AuthService {
         fechaNacimiento: Date | null;
         sexo: string | null;
         creditos: import("@prisma/client-runtime-utils").Decimal;
-        membership: boolean;
+        membership: import("@prisma/client").$Enums.MembershipType;
+        profileCompleted: boolean;
+        affiliateName: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    changeUsername(userId: string, newUsername: string): Promise<{
+        id: string;
+        email: string;
+        username: string;
+        googleId: string | null;
+        dni: string | null;
+        password: string | null;
+        nombre: string | null;
+        apellidos: string | null;
+        fechaNacimiento: Date | null;
+        sexo: string | null;
+        creditos: import("@prisma/client-runtime-utils").Decimal;
+        membership: import("@prisma/client").$Enums.MembershipType;
+        profileCompleted: boolean;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;

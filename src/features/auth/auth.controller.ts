@@ -26,6 +26,7 @@ export class AuthController {
     @Post('complete-profile')
     async completeProfile(@Request() req, @Body() body: any) {
         return this.authService.completeProfile(req.user.userId, {
+            username: body.username,
             nombre: body.nombre,
             apellidos: body.apellidos,
             fechaNacimiento: new Date(body.fechaNacimiento),

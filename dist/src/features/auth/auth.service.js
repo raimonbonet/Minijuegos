@@ -75,12 +75,14 @@ let AuthService = class AuthService {
         };
     }
     async googleLogin(req) {
+        console.log('AuthService.googleLogin started', req.user);
         if (!req.user) {
             throw new common_1.InternalServerErrorException('No user from google');
         }
         let user = await this.usersService.findOneByGoogleId(req.user.googleId);
         let isNewUser = false;
         if (!user) {
+            console.log('Creating new Google user...');
             user = await this.usersService.create({
                 email: req.user.email,
                 googleId: req.user.googleId,
@@ -90,11 +92,13 @@ let AuthService = class AuthService {
                 profileCompleted: false,
             });
             isNewUser = true;
+            console.log('Creating wallet for new user:', user.id);
             await this.walletService.createWallet(user.id);
         }
         else if (!user.profileCompleted) {
             user = await this.usersService.updateProfile(user.id, { profileCompleted: true });
         }
+        console.log('Google login successful:', user.id);
         return {
             message: 'User information from google',
             user,

@@ -31,6 +31,7 @@ export class AuthService {
     }
 
     async googleLogin(req: any) {
+        console.log('AuthService.googleLogin started', req.user);
         if (!req.user) {
             throw new InternalServerErrorException('No user from google');
         }
@@ -39,25 +40,27 @@ export class AuthService {
         let isNewUser = false;
 
         if (!user) {
+            console.log('Creating new Google user...');
             // Create user if it doesn't exist
             user = await this.usersService.create({
                 email: req.user.email,
                 googleId: req.user.googleId,
                 nombre: req.user.firstName,
                 apellidos: req.user.lastName,
-                username: `user_${req.user.googleId.substr(0, 8)}`, // Generate a unique username
+                username: `user_${req.user.googleId.substr(0, 8)}`,
                 profileCompleted: false,
             });
 
             isNewUser = true;
 
             // Initialize wallet for new user
+            console.log('Creating wallet for new user:', user.id);
             await this.walletService.createWallet(user.id);
         } else if (!user.profileCompleted) {
-            // Ensure existing Google users have profileCompleted set
             user = await this.usersService.updateProfile(user.id, { profileCompleted: true });
         }
 
+        console.log('Google login successful:', user.id);
         return {
             message: 'User information from google',
             user,

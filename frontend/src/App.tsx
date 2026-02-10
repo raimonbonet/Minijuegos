@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import NeonMatchPage from './pages/NeonMatchPage';
+import AdminPage from './pages/AdminPage';
+import AdminRoute from './components/AdminRoute';
 
 // Simple protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.JSX.Element }) => {
@@ -36,7 +38,22 @@ function App() {
           path="/"
           element={<DashboardPage />}
         />
-        <Route path="/game/neon-match" element={<NeonMatchPage />} />
+        <Route
+          path="/game/neon-match"
+          element={
+            <ProtectedRoute>
+              <NeonMatchPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

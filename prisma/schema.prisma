@@ -19,15 +19,27 @@ model User {
   apellidos       String?
   fechaNacimiento DateTime?
   sexo            String?
-  creditos        Decimal  @default(0.0) @db.Decimal(10, 2)
+  Zoins           Decimal  @default(0.0) @db.Decimal(10, 2)
+  isAdmin         Boolean  @default(false)
   membership      MembershipType @default(FREE)
   profileCompleted Boolean @default(false)
+  isFrozen        Boolean  @default(false)
   dni             String?  @unique
   affiliateName   String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   wallet          Wallet?
+  scores          Score[]
+}
+
+model Score {
+  id        String   @id @default(uuid())
+  amount    Int
+  game      String   @default("neon-match")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 
@@ -37,10 +49,12 @@ model Wallet {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id])
   
-  transactions Transaction[]
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
 }
 
 model Transaction {
@@ -50,6 +64,7 @@ model Transaction {
   description String?
   walletId    String
   wallet      Wallet   @relation(fields: [walletId], references: [id])
+  signature   String   @default("") // Hash for integrity
   
   createdAt   DateTime @default(now())
 }
@@ -59,6 +74,8 @@ enum TransactionType {
   WITHDRAWAL
   PAYMENT
   REFUND
+  GAME_REWARD
+  ADMIN_ADJUSTMENT
 }
 
 enum MembershipType {

@@ -22,7 +22,9 @@ const Navbar = ({ user, onLoginClick, onLogoutClick }: { user: any, onLoginClick
                     {/* Wallet */}
                     <div className="flex items-center gap-2 bg-[var(--bg-panel)] px-4 py-1.5 rounded-full border border-[var(--zoin-gold)]/30 shadow-[0_0_15px_rgba(255,215,0,0.15)] hover:border-[var(--zoin-gold)] transition-colors cursor-pointer">
                         <img src="/zoins_icon.jpg" alt="Zoins" className="w-5 h-5 rounded-full object-cover" />
-                        <span className="font-black text-xl text-[var(--zoin-gold)] tracking-tight font-mono">{user.wallet?.credits || 0}</span>
+                        <span className="font-black text-xl text-[var(--zoin-gold)] tracking-tight font-mono">
+                            {Number(user.Zoins || user.wallet?.balance || 0).toFixed(2)}
+                        </span>
                     </div>
 
                     {/* Divider */}
@@ -106,7 +108,7 @@ const MarketCard = ({ name, price, image }: { name: string, price: number, image
 export default function DashboardPage() {
     const navigate = useNavigate();
     const [user, setUser] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
     // Auth Simulation (Connecting to real backend)
@@ -119,15 +121,14 @@ export default function DashboardPage() {
 
         async function loadUser() {
             const currentToken = localStorage.getItem('token');
-            if (!currentToken) { setLoading(false); return; }
+            if (!currentToken) { return; }
             try {
                 const profile = await apiRequest('/auth/profile');
                 setUser(profile);
             } catch (e) {
                 console.error(e);
                 localStorage.removeItem('token');
-            } finally {
-                setLoading(false);
+
             }
         }
         loadUser();

@@ -6,14 +6,14 @@ export declare class WalletController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        balance: import("@prisma/client-runtime-utils").Decimal;
         userId: string;
+        balance: import("@prisma/client-runtime-utils").Decimal;
     } | null>;
     deposit(req: any, amount: number): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        balance: import("@prisma/client-runtime-utils").Decimal;
         userId: string;
+        balance: import("@prisma/client-runtime-utils").Decimal;
     }>;
 }

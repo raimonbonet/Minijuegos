@@ -22,9 +22,11 @@ export declare class AuthController {
         apellidos: string | null;
         fechaNacimiento: Date | null;
         sexo: string | null;
-        creditos: import("@prisma/client-runtime-utils").Decimal;
+        Zoins: import("@prisma/client-runtime-utils").Decimal;
+        isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
         profileCompleted: boolean;
+        isFrozen: boolean;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -41,9 +43,11 @@ export declare class AuthController {
         apellidos: string | null;
         fechaNacimiento: Date | null;
         sexo: string | null;
-        creditos: import("@prisma/client-runtime-utils").Decimal;
+        Zoins: import("@prisma/client-runtime-utils").Decimal;
+        isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
         profileCompleted: boolean;
+        isFrozen: boolean;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -60,9 +64,11 @@ export declare class AuthController {
         apellidos: string | null;
         fechaNacimiento: Date | null;
         sexo: string | null;
-        creditos: import("@prisma/client-runtime-utils").Decimal;
+        Zoins: import("@prisma/client-runtime-utils").Decimal;
+        isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
         profileCompleted: boolean;
+        isFrozen: boolean;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;

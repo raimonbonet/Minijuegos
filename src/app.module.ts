@@ -8,6 +8,8 @@ import { TransactionsModule } from './features/transactions/transactions.module'
 import { AuthModule } from './features/auth/auth.module';
 import { PaymentsModule } from './features/payments/payments.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
+import { AdminModule } from './features/admin/admin.module';
+import { ScoresModule } from './features/scores/scores.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { PrismaModule } from './shared/prisma/prisma.module';
     TransactionsModule,
     AuthModule,
     PaymentsModule,
+    AdminModule,
+    ScoresModule,
   ],
   controllers: [AppController],
   providers: [AppService],

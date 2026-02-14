@@ -46,16 +46,32 @@ let AuthController = class AuthController {
         return this.authService.changeUsername(req.user.userId, username);
     }
     async googleAuthRedirect(req, res) {
-        const result = await this.authService.googleLogin(req);
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const token = result.access_token;
-        const isNewUser = result.isNewUser;
-        if (isNewUser) {
-            const userName = result.user.nombre || 'Usuario';
-            res.redirect(`${frontendUrl}/?token=${token}&welcome=true&name=${encodeURIComponent(userName)}`);
+        console.log('AuthController.googleAuthRedirect hit');
+        try {
+            const result = await this.authService.googleLogin(req);
+            console.log('AuthService.googleLogin success. New User:', result.isNewUser);
+            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            if (frontendUrl.endsWith('/')) {
+                frontendUrl = frontendUrl.slice(0, -1);
+            }
+            const token = result.access_token;
+            const isNewUser = result.isNewUser;
+            const user = result.user;
+            const userName = user.nombre || user.username || 'Usuario';
+            let redirectUrl = `${frontendUrl}/?token=${token}`;
+            if (isNewUser) {
+                redirectUrl += `&welcome=true&name=${encodeURIComponent(userName)}`;
+            }
+            console.log('Redirecting to:', redirectUrl);
+            res.redirect(302, redirectUrl);
         }
-        else {
-            res.redirect(`${frontendUrl}/?token=${token}`);
+        catch (error) {
+            console.error('Error in googleAuthRedirect:', error);
+            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            if (frontendUrl.endsWith('/')) {
+                frontendUrl = frontendUrl.slice(0, -1);
+            }
+            res.redirect(302, `${frontendUrl}/login?error=GoogleAuthFailed`);
         }
     }
     async getProfile(req) {

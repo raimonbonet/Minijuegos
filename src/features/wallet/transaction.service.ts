@@ -66,4 +66,17 @@ export class TransactionService {
             data: { isFrozen: true }
         });
     }
+    async getUserTransactions(userId: string) {
+        const wallet = await this.prisma.wallet.findUnique({
+            where: { userId },
+        });
+
+        if (!wallet) return [];
+
+        return this.prisma.transaction.findMany({
+            where: { walletId: wallet.id },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+        });
+    }
 }

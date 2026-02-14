@@ -1,33 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand Core */
-  --bg-deep: #121212;
-  --bg-panel: #1e1e1e;
+  /* Tropical Brand Core */
+  /* Sand / Beach Main Background */
+  --bg-deep: #FFF9E6;
+  /* Warm Sand */
+  /* Maldives Ocean Blue for Panels */
+  --bg-panel: rgba(0, 119, 190, 0.9);
 
-  /* Characters */
-  --blaze-neon: #00F0FF;
-  /* Electric Blue */
-  --blaze-deep: #004e54;
+  /* Characters / Accents */
+  /* Palm Tree Green */
+  --blaze-neon: #ff9f1c;
+  /* Sunny Orange */
+  --blaze-deep: #2e7d32;
+  /* Deep Jungle Green */
 
-  --kai-green: #10B981;
-  /* Eucalyptus */
-  --kai-soft: #064e3b;
+  --kai-green: #388e3c;
+  --kai-soft: #81c784;
 
   /* Economy */
-  --zoin-gold: #FFD700;
-  /* Pure Gold */
+  --zoin-gold: #ffd700;
 
   /* Text */
-  --text-main: #FFFFFF;
-  --text-muted: #A1A1AA;
+  /* Dark Wood / Coconut Shell */
+  --text-main: #3e2723;
+  /* Lighter Wood / Driftwood - adjusted for contrast on blue */
+  --text-muted: #D7CCC8;
+  /* Lighter for readability on blue panels */
+  --text-dark: #3e2723;
+  /* For use on light sand backgrounds */
 }
 
 body {
   background-color: var(--bg-deep);
   color: var(--text-main);
   font-family: 'Outfit', 'Inter', sans-serif;
-  /* Presuming font availability or fallback */
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
@@ -65,16 +72,52 @@ body {
   background-color: var(--zoin-gold);
 }
 
+/* Glass Panel - Now Maldives Blue based */
 .glass-panel {
-  background: rgba(30, 30, 30, 0.6);
+  background: var(--bg-panel);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  color: white;
+  /* Default text white on blue panels */
+}
+
+/* Wood Texture Utilities */
+.bg-wood {
+  background-color: #8d6e63;
+  background-image: url('/wood_texture.png');
+  /* Fallback or generated image */
+  background-size: cover;
+  background-repeat: no-repeat;
+  border: 4px solid #5D4037;
+  /* Rustic border */
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.btn-wood {
+  background-color: #8d6e63;
+  background-image: url('/wood_texture.png');
+  background-size: cover;
+  color: #FFF;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  border: 3px solid #5D4037;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 #3E2723;
+  transition: all 0.1s;
+}
+
+.btn-wood:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 #3E2723;
 }
 
 .nav-glass {
-  background: rgba(18, 18, 18, 0.85);
+  background: var(--bg-panel);
+  /* Consistent blue */
   backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 2px solid #ff9f1c;
+  /* Orange accent line */
+  color: #ffffff;
 }
 
 /* Animations */

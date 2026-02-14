@@ -40,22 +40,30 @@ export class AuthService {
         let isNewUser = false;
 
         if (!user) {
-            console.log('Creating new Google user...');
-            // Create user if it doesn't exist
-            user = await this.usersService.create({
-                email: req.user.email,
-                googleId: req.user.googleId,
-                nombre: req.user.firstName,
-                apellidos: req.user.lastName,
-                username: `user_${req.user.googleId.substr(0, 8)}`,
-                profileCompleted: false,
-            });
+            // Check if user exists by email (to link account)
+            const existingUser = await this.usersService.findOneByEmail(req.user.email);
 
-            isNewUser = true;
+            if (existingUser) {
+                console.log('Linking Google account to existing user:', existingUser.id);
+                user = await this.usersService.update(existingUser.id, { googleId: req.user.googleId });
+                // Also update profile if needed? Maybe not.
+            } else {
+                console.log('Creating new Google user...');
+                // Create user if it doesn't exist
+                user = await this.usersService.create({
+                    email: req.user.email,
+                    googleId: req.user.googleId,
+                    nombre: req.user.firstName,
+                    apellidos: req.user.lastName,
+                    username: `user_${req.user.googleId.substr(0, 8)}`,
+                    profileCompleted: false,
+                });
+                isNewUser = true;
 
-            // Initialize wallet for new user
-            console.log('Creating wallet for new user:', user.id);
-            await this.walletService.createWallet(user.id);
+                // Initialize wallet for new user
+                console.log('Creating wallet for new user:', user.id);
+                await this.walletService.createWallet(user.id);
+            }
         } else if (!user.profileCompleted) {
             user = await this.usersService.updateProfile(user.id, { profileCompleted: true });
         }
@@ -70,7 +78,10 @@ export class AuthService {
     }
 
     async getFullProfile(userId: string) {
-        return this.usersService.findOne(userId);
+        const user = await this.usersService.findOne(userId);
+        if (!user) return null;
+        const { password, ...result } = user;
+        return { ...result, hasPassword: !!password };
     }
 
     async register(email: string, pass: string, username: string) {

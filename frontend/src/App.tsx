@@ -5,7 +5,10 @@ import CompleteProfilePage from './pages/CompleteProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import NeonMatchPage from './pages/NeonMatchPage';
 import AdminPage from './pages/AdminPage';
+import ProfilePage from './pages/ProfilePage';
+import SubscriptionsPage from './pages/SubscriptionsPage';
 import AdminRoute from './components/AdminRoute';
+import MainLayout from './layouts/MainLayout';
 
 // Simple protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.JSX.Element }) => {
@@ -26,34 +29,55 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/complete-profile"
-          element={
-            <ProtectedRoute>
-              <CompleteProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/"
-          element={<DashboardPage />}
-        />
-        <Route
-          path="/game/neon-match"
-          element={
-            <ProtectedRoute>
-              <NeonMatchPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
-          }
-        />
+
+        {/* Main Layout Wraps Pages with Navbar */}
+        <Route element={<MainLayout />}>
+          <Route
+            path="/complete-profile"
+            element={
+              <ProtectedRoute>
+                <CompleteProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/"
+            element={<DashboardPage />}
+          />
+          <Route
+            path="/game/neon-match"
+            element={
+              <ProtectedRoute>
+                <NeonMatchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/subscriptions"
+            element={
+              <ProtectedRoute>
+                <SubscriptionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+        </Route>
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

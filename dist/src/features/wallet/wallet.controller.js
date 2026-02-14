@@ -17,13 +17,19 @@ const common_1 = require("@nestjs/common");
 const wallet_service_1 = require("./wallet.service");
 const auth_guards_1 = require("../auth/guards/auth.guards");
 const client_1 = require("@prisma/client");
+const transaction_service_1 = require("./transaction.service");
 let WalletController = class WalletController {
     walletService;
-    constructor(walletService) {
+    transactionService;
+    constructor(walletService, transactionService) {
         this.walletService = walletService;
+        this.transactionService = transactionService;
     }
     async getBalance(req) {
         return this.walletService.getWalletByUserId(req.user.userId);
+    }
+    async getTransactions(req) {
+        return this.transactionService.getUserTransactions(req.user.userId);
     }
     async deposit(req, amount) {
         return this.walletService.updateBalance(req.user.userId, amount, client_1.TransactionType.DEPOSIT, 'User manual deposit');
@@ -38,6 +44,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], WalletController.prototype, "getBalance", null);
 __decorate([
+    (0, common_1.Get)('transactions'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], WalletController.prototype, "getTransactions", null);
+__decorate([
     (0, common_1.Post)('deposit'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)('amount')),
@@ -48,6 +61,7 @@ __decorate([
 exports.WalletController = WalletController = __decorate([
     (0, common_1.UseGuards)(auth_guards_1.JwtAuthGuard),
     (0, common_1.Controller)('wallet'),
-    __metadata("design:paramtypes", [wallet_service_1.WalletService])
+    __metadata("design:paramtypes", [wallet_service_1.WalletService,
+        transaction_service_1.TransactionService])
 ], WalletController);
 //# sourceMappingURL=wallet.controller.js.map

@@ -31,6 +31,13 @@ export class UsersService {
         });
     }
 
+    async update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
+        return this.prisma.user.update({
+            where: { id },
+            data,
+        });
+    }
+
     async updateProfile(id: string, data: Partial<User>): Promise<User> {
         return this.prisma.user.update({
             where: { id },
@@ -42,6 +49,51 @@ export class UsersService {
         return this.prisma.user.findUnique({
             where: { id },
             include: { wallet: true }
+        });
+    }
+
+    // --- Daily Limits & Subscription Logic ---
+
+    getDailyLimit(membership: string): number {
+        switch (membership) {
+            case 'FREE': return 3;
+            case 'PALMERA': return 8;
+            case 'CORAL': return 15;
+            case 'PERLA': return 25;
+            default: return 3;
+        }
+    }
+
+    async canPlay(userId: string): Promise<boolean> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { membership: true, dailyGamesPlayed: true, isAdmin: true }
+        });
+
+        if (!user) return false;
+        if (user.isAdmin) return true; // Admins have unlimited games
+
+        const limit = this.getDailyLimit(user.membership);
+        return user.dailyGamesPlayed < limit;
+    }
+
+    async incrementDailyGames(userId: string): Promise<void> {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { dailyGamesPlayed: { increment: 1 } }
+        });
+    }
+
+    async resetAllDailyGames(): Promise<void> {
+        await this.prisma.user.updateMany({
+            data: { dailyGamesPlayed: 0, lastDailyReset: new Date() }
+        });
+        console.log(`[UsersService] Daily games reset for all users at ${new Date().toISOString()}`);
+    }
+    async changePassword(userId: string, newPasswordHash: string): Promise<void> {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { password: newPasswordHash }
         });
     }
 }

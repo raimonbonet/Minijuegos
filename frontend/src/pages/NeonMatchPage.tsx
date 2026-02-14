@@ -1,29 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { ArrowLeft, Timer, Trophy } from 'lucide-react';
 import { apiRequest } from '../lib/api';
 import Leaderboard from '../components/Leaderboard';
 
+// ... (constants and types remain same)
 const width = 8;
 const candyColors = [
-    '#ef4444', // Red-500
-    '#3b82f6', // Blue-500
-    '#22c55e', // Green-500
-    '#a855f7', // Purple-500
-    '#f59e0b', // Amber-500
-    '#ec4899', // Pink-500 (New color)
+    '#ef4444',
+    '#3b82f6',
+    '#22c55e',
+    '#a855f7',
+    '#f59e0b',
+    '#ec4899',
 ];
 
 type FloatingText = {
     id: number;
-    x: number; // percentage (0-100) relative to board
-    y: number; // percentage (0-100) relative to board
+    x: number;
+    y: number;
     value: number;
 };
 
+interface Piece {
+    id: number;
+    val: string;
+    isMatched?: boolean;
+}
+
 const NeonMatchPage = () => {
     const navigate = useNavigate();
-    const [currentColorArrangement, setCurrentColorArrangement] = useState<string[]>([]);
+    const { user, refreshUser } = useOutletContext<any>();
+
+    // Game State
+    const [currentColorArrangement, setCurrentColorArrangement] = useState<Piece[]>([]);
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(60);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -31,73 +41,111 @@ const NeonMatchPage = () => {
     const [isGameOver, setIsGameOver] = useState(false);
     const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
     const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+    const [collectedZoins, setCollectedZoins] = useState(0);
 
-    // UseRef for reliable id generation in loop
     const nextIdRef = useRef(0);
+    const nextPieceIdRef = useRef(0);
+
+    // Derived State from Context
+    const isAdmin = user?.isAdmin || false;
+    const membership = user?.membership || 'FREE';
+
+    const getLimit = (mem: string) => {
+        switch (mem) {
+            case 'FREE': return 3;
+            case 'PALMERA': return 8;
+            case 'CORAL': return 15;
+            case 'PERLA': return 25;
+            default: return 3;
+        }
+    };
+
+    const limit = getLimit(membership);
+    const played = typeof user?.dailyGamesPlayed === 'number' ? user.dailyGamesPlayed : 0;
+    const dailyGamesLeft = isAdmin ? 9999 : Math.max(0, limit - played);
+
 
     // --- Helper Logic (Immutable) ---
 
+    // zValue parsing: color|mul|z0.01
     const getBaseColor = (cell: string) => cell.split('|')[0];
     const isMultiplier = (cell: string) => cell.includes('|mul');
+    const getZoinValue = (cell: string): number => {
+        const match = cell.match(/\|z([\d.]+)/);
+        return match ? parseFloat(match[1]) : 0;
+    };
 
-    // Returns { newBoard, scoreIncrease, matchCenters } or null if no matches
-    const getBoardAfterMatches = (board: string[]): { newBoard: string[], scoreIncrease: number, matchCenters: { x: number, y: number }[] } | null => {
+    // Updated to work with Piece[]
+    const getBoardAfterMatches = (board: Piece[]): { newBoard: Piece[], scoreIncrease: number, zoinIncrease: number, matchCenters: { x: number, y: number }[] } | null => {
         let matchedIndices = new Set<number>();
 
         // Check Rows
         for (let i = 0; i < 64; i++) {
-            if (i % width > width - 3) continue; // Skip end of rows
+            // Optimization: If we are at col 6 or 7, a match-3 is impossible starting here.
+            // But we must also ensure we don't check across rows.
+            const currentRow = Math.floor(i / width);
 
-            const row = [i, i + 1, i + 2];
-            const color = getBaseColor(board[i]);
+            // Check potential match-3
+            if (i + 2 < 64 && Math.floor((i + 2) / width) === currentRow) {
+                const row = [i, i + 1, i + 2];
+                const color = getBaseColor(board[i].val);
 
-            if (!color) continue;
-
-            if (row.every(idx => getBaseColor(board[idx]) === color)) {
-                let matchLength = 3;
-                while ((i + matchLength) % width !== 0 && getBaseColor(board[i + matchLength]) === color) {
-                    row.push(i + matchLength);
-                    matchLength++;
+                if (color && row.every(idx => getBaseColor(board[idx].val) === color)) {
+                    let matchLength = 3;
+                    // Extend match
+                    while (
+                        i + matchLength < 64 &&
+                        Math.floor((i + matchLength) / width) === currentRow &&
+                        getBaseColor(board[i + matchLength].val) === color
+                    ) {
+                        row.push(i + matchLength);
+                        matchLength++;
+                    }
+                    row.forEach(idx => matchedIndices.add(idx));
                 }
-                row.forEach(idx => matchedIndices.add(idx));
             }
         }
 
         // Check Columns
-        for (let i = 0; i <= 47; i++) {
-            const col = [i, i + width, i + width * 2];
-            const color = getBaseColor(board[i]);
+        for (let i = 0; i < width; i++) {
+            for (let j = 0; j <= width - 3; j++) { // Only go up to row 5
+                const startIdx = j * width + i;
+                const col = [startIdx, startIdx + width, startIdx + width * 2];
+                const color = getBaseColor(board[startIdx].val);
 
-            if (!color) continue;
-
-            if (col.every(idx => getBaseColor(board[idx]) === color)) {
-                let matchLength = 3;
-                while (i + width * matchLength < 64 && getBaseColor(board[i + width * matchLength]) === color) {
-                    col.push(i + width * matchLength);
-                    matchLength++;
+                if (color && col.every(idx => getBaseColor(board[idx].val) === color)) {
+                    let matchLength = 3;
+                    while (
+                        j + matchLength < width &&
+                        getBaseColor(board[startIdx + width * matchLength].val) === color
+                    ) {
+                        col.push(startIdx + width * matchLength);
+                        matchLength++;
+                    }
+                    col.forEach(idx => matchedIndices.add(idx));
                 }
-                col.forEach(idx => matchedIndices.add(idx));
             }
         }
 
         if (matchedIndices.size > 0) {
             const newBoard = [...board];
+            let zoinIncrease = 0;
+
             matchedIndices.forEach(idx => {
-                newBoard[idx] = ''; // Clear matched pieces
+                const zVal = getZoinValue(board[idx].val);
+                if (zVal > 0) {
+                    zoinIncrease += zVal;
+                }
+                newBoard[idx] = { id: nextPieceIdRef.current++, val: '' };
             });
 
-            // Score Logic
             let scoreIncrease = matchedIndices.size * 10;
-
-            // Check for multiplier
             let hasMultiplier = false;
             matchedIndices.forEach(idx => {
-                if (isMultiplier(board[idx])) hasMultiplier = true;
+                if (isMultiplier(board[idx].val)) hasMultiplier = true;
             });
-
             if (hasMultiplier) scoreIncrease *= 10;
 
-            // Calculate center of mass for all matched indices as a simple visual approximation
             let totalX = 0;
             let totalY = 0;
             matchedIndices.forEach(idx => {
@@ -105,145 +153,197 @@ const NeonMatchPage = () => {
                 totalY += Math.floor(idx / width);
             });
 
-            const centerX = (totalX / matchedIndices.size) * (100 / width) + (50 / width); // Center of block percent
+            const centerX = (totalX / matchedIndices.size) * (100 / width) + (50 / width);
             const centerY = (totalY / matchedIndices.size) * (100 / width) + (50 / width);
 
-            return { newBoard, scoreIncrease, matchCenters: [{ x: centerX, y: centerY }] };
+            return { newBoard, scoreIncrease, zoinIncrease, matchCenters: [{ x: centerX, y: centerY }] };
         }
 
         return null;
     };
 
-    const getBoardAfterGravity = (board: string[]): string[] => {
+    // Modified Gravity: Step-by-Step for animation logic
+    const getBoardAfterGravity = (board: Piece[]): { newBoard: Piece[], moved: boolean } => { // Return moved status
         const newBoard = [...board];
-        let moved = true;
-        while (moved) {
-            moved = false;
-            for (let i = 55; i >= 0; i--) { // Iterate from bottom-up (above last row)
-                // If current cell has a block and below is empty
-                if (newBoard[i] !== '' && newBoard[i + width] === '') {
-                    newBoard[i + width] = newBoard[i];
-                    newBoard[i] = '';
-                    moved = true;
-                }
+        let moved = false;
+
+        // 1. Move Blocks Down (Single Step)
+        // Iterate bottom-up (Row 6 down to 0)
+        for (let i = 55; i >= 0; i--) {
+            // If current has block, and below is empty
+            if (newBoard[i].val !== '' && newBoard[i + width].val === '') {
+                newBoard[i + width] = newBoard[i]; // Move object
+                newBoard[i] = { id: nextPieceIdRef.current++, val: '' }; // Leave empty placeholder
+                moved = true;
+                // Important: In a single pass, we don't "teleport" this block further down.
+                // The next tick will handle the next step if needed.
             }
         }
 
-        // Refill top row if empty (after all gravity settled)
-        // Actually, normal gravity fills top row one by one? 
-        // If we want "instant fill", we should fill any empty space in top row
-        for (let i = 0; i < width; i++) {
-            if (newBoard[i] === '') {
-                const baseColor = candyColors[Math.floor(Math.random() * candyColors.length)];
-                const isLucky = Math.random() < 0.01;
-                newBoard[i] = isLucky ? `${baseColor}|mul` : baseColor;
-                // Important: If we fill the top, we should theoretically let it fall again?
-                // But simplified: loop will catch it in next tick? 
-                // No, we want instant.
-                // So checking gravity again would be recursive. 
-                // Let's just fill top and let next tick handle falling of NEW blocks if needed?
-                // The user wants "caer de golpe".
-            }
-        }
-
-        // Better Multi-pass approach for Refill + Fall:
-        // 1. Drop existing blocks to bottom.
-        // 2. Fill empty spaces at top? No, fill empty columns?
-        // Standard approach:
-        // For each column:
-        //   Extract blocks.
-        //   Fill remaining space with new randoms.
-        //   Reconstruct column.
-
+        // 2. Spawn New Blocks at Top Row
         for (let col = 0; col < width; col++) {
-            let columnBlocks = [];
-            for (let row = 0; row < width; row++) {
-                const idx = row * width + col;
-                if (newBoard[idx] !== '') {
-                    columnBlocks.push(newBoard[idx]);
-                }
-            }
-
-            // How many missing?
-            const missing = width - columnBlocks.length;
-
-            // Add new blocks at the START (top)
-            const newBlocks = [];
-            for (let k = 0; k < missing; k++) {
+            if (newBoard[col].val === '') { // If top row is empty
+                // Generate ONE new block
                 const baseColor = candyColors[Math.floor(Math.random() * candyColors.length)];
-                const isLucky = Math.random() < 0.01;
-                newBlocks.push(isLucky ? `${baseColor}|mul` : baseColor);
-            }
+                let suffixes = "";
+                if (Math.random() < 0.01) suffixes += "|mul";
+                if (Math.random() < 0.01) suffixes += "|z0.01"; // Restored to 1%
 
-            // Final Column: NewBlocks + ExistingBlocks
-            const fullColumn = [...newBlocks, ...columnBlocks];
-
-            // Apply to board
-            for (let row = 0; row < width; row++) {
-                newBoard[row * width + col] = fullColumn[row];
+                newBoard[col] = {
+                    id: nextPieceIdRef.current++,
+                    val: `${baseColor}${suffixes}` // No spawn-in flag needed for layout?
+                };
+                moved = true; // Spawning counts as movement
             }
         }
 
-        return newBoard;
+        // If nothing moved and no matches pending, we are stable.
+        return { newBoard, moved };
     };
 
     // --- Life Cycle ---
 
     const createBoard = () => {
-        const randomColorArrangement = [];
+        // 1. Generate Base Board with NO Initial Matches
+        const boardStrings: string[] = new Array(width * width).fill('');
+
         for (let i = 0; i < width * width; i++) {
-            const baseColor = candyColors[Math.floor(Math.random() * candyColors.length)];
+            const col = i % width;
+            const row = Math.floor(i / width);
+
+            let validColors = [...candyColors];
+
+            // Prevent horizontal match (check left 2)
+            if (col >= 2) {
+                const c1 = getBaseColor(boardStrings[i - 1]);
+                const c2 = getBaseColor(boardStrings[i - 2]);
+                if (c1 === c2 && c1) {
+                    validColors = validColors.filter(c => c !== c1);
+                }
+            }
+
+            // Prevent vertical match (check top 2)
+            if (row >= 2) {
+                const c1 = getBaseColor(boardStrings[i - width]);
+                const c2 = getBaseColor(boardStrings[i - width * 2]);
+                if (c1 === c2 && c1) {
+                    validColors = validColors.filter(c => c !== c1);
+                }
+            }
+
+            // Fallback if filtering removed all (unlikely with 6 colors)
+            const baseColor = validColors.length > 0
+                ? validColors[Math.floor(Math.random() * validColors.length)]
+                : candyColors[Math.floor(Math.random() * candyColors.length)];
+
+            // Small chance for multiplier on start
             const isLucky = Math.random() < 0.01;
-            randomColorArrangement.push(isLucky ? `${baseColor}|mul` : baseColor);
+            boardStrings[i] = isLucky ? `${baseColor}|mul` : baseColor;
         }
-        setCurrentColorArrangement(randomColorArrangement);
+
+        // 2. Determine Zoin Pool (The "Loot Table")
+        // "no deben salir mas de los que he mencionado" -> This pool is the TOTAL for the game.
+        const zoinValues: number[] = [];
+
+        // Fixed: 1x 0.01
+        zoinValues.push(0.01);
+
+        // Probabilistic:
+        if (Math.random() < 0.50) zoinValues.push(0.01); // 50% chance
+
+        // Rare high-value ones (kept as low legacy chance for now)
+        if (Math.random() < 0.10) zoinValues.push(0.02); // 10% chance
+        if (Math.random() < 0.02) zoinValues.push(0.05); // 2% chance
+
+        // 3. Inject Zoins into random positions
+        const takenIndices = new Set<number>();
+
+        zoinValues.forEach(zValue => {
+            let idx;
+            let attempts = 0;
+            do {
+                idx = Math.floor(Math.random() * (width * width));
+                attempts++;
+            } while (takenIndices.has(idx) && attempts < 100);
+
+            if (!takenIndices.has(idx)) {
+                takenIndices.add(idx);
+                boardStrings[idx] = `${boardStrings[idx]}|z${zValue}`;
+            }
+        });
+
+        // 4. Convert to Pieces with IDs
+        const board: Piece[] = boardStrings.map(val => ({
+            id: nextPieceIdRef.current++,
+            val
+        }));
+
+        setCurrentColorArrangement(board);
     };
 
     useEffect(() => {
         createBoard();
     }, []);
 
+    // Ref to access latest board state inside setInterval without dependency cycles
+    const boardRef = useRef(currentColorArrangement);
+    useEffect(() => {
+        boardRef.current = currentColorArrangement;
+    }, [currentColorArrangement]);
+
     // Game Loop (Gravity & Passive Matching)
     useEffect(() => {
         if (isGameOver || isPaused) return;
 
         const timer = setInterval(() => {
-            setCurrentColorArrangement(currentBoard => {
-                // 1. Instant Gravity (Teleport to stable state)
-                const gravityBoard = getBoardAfterGravity(currentBoard);
+            const currentBoard = boardRef.current;
 
-                // 2. Try Matches on result
-                const matchResult = getBoardAfterMatches(gravityBoard);
+            // 1. Gravity Phase
+            const { newBoard: gravityBoard, moved } = getBoardAfterGravity(currentBoard);
 
-                if (matchResult) {
-                    if (isPlaying) {
-                        setScore(s => s + matchResult.scoreIncrease);
+            if (moved) {
+                // If blocks are falling, just update board. No matches yet.
+                setCurrentColorArrangement(gravityBoard);
+                return;
+            }
 
-                        // Add floating text (passive matches)
-                        matchResult.matchCenters.forEach(center => {
-                            const newText: FloatingText = {
-                                id: nextIdRef.current++,
-                                x: center.x,
-                                y: center.y,
-                                value: matchResult.scoreIncrease
-                            };
-                            setFloatingTexts(prev => [...prev, newText]);
-                            // Cleanup after animation (1s)
-                            setTimeout(() => {
-                                setFloatingTexts(prev => prev.filter(t => t.id !== newText.id));
-                            }, 1000);
-                        });
+            // 2. Match Phase (Only if stable)
+            const matchResult = getBoardAfterMatches(gravityBoard);
+
+            if (matchResult) {
+                if (isPlaying) {
+                    // Update Board
+                    setCurrentColorArrangement(matchResult.newBoard);
+
+                    // Side Effects (Score, Zoins, Floating Text) - Safe here (runs once per tick)
+                    setScore(s => s + matchResult.scoreIncrease);
+                    if (matchResult.zoinIncrease > 0) {
+                        setCollectedZoins(z => z + matchResult.zoinIncrease);
                     }
 
-                    return matchResult.newBoard;
+                    // Add floating text
+                    matchResult.matchCenters.forEach(center => {
+                        const newText: FloatingText = {
+                            id: nextIdRef.current++,
+                            x: center.x,
+                            y: center.y,
+                            value: matchResult.scoreIncrease
+                        };
+                        setFloatingTexts(prev => [...prev, newText]);
+                        setTimeout(() => {
+                            setFloatingTexts(prev => prev.filter(t => t.id !== newText.id));
+                        }, 1000);
+                    });
                 }
-
-                return gravityBoard; // If no matches, just return gravity result (or same board if stable)
-            });
-        }, 100);
-
+            } else if (gravityBoard !== currentBoard) {
+                // If gravity happened but no matches (rare edge case where gravity didn't flag 'moved' but array changed? unlikely given logic, but safe)
+                // Actually getBoardAfterGravity retuns moved=true if any change. 
+                // But if we are here, moved=false. So logic is stable.
+            }
+        }, 120); // 120ms tick for faster gameplay
         return () => clearInterval(timer);
     }, [isPlaying, isGameOver, isPaused]);
+
 
     // Timer
     useEffect(() => {
@@ -262,25 +362,29 @@ const NeonMatchPage = () => {
 
 
     // Submit score on game over
+    const submitScore = async () => {
+        if (score === 0 && collectedZoins === 0) return;
+        try {
+            await apiRequest('/scores', {
+                method: 'POST',
+                body: JSON.stringify({ amount: score, game: 'neon-match', zoins: collectedZoins })
+            });
+            // Update global limits immediately
+            if (refreshUser) await refreshUser();
+        } catch (e: any) {
+            console.error("Error submitting score:", e);
+            if (e.message && e.message.includes('congelada')) {
+                alert("⚠️ ALERTA DE SEGURIDAD ⚠️\n\n" + e.message);
+            }
+        }
+    };
+
     // Submit score on game over
     useEffect(() => {
-        if (isGameOver && score > 0) {
-            const submit = async () => {
-                try {
-                    await apiRequest('/scores', {
-                        method: 'POST',
-                        body: JSON.stringify({ amount: score, game: 'neon-match' })
-                    });
-                } catch (e: any) {
-                    console.error("Error submitting score:", e);
-                    if (e.message && e.message.includes('congelada')) {
-                        alert("⚠️ ALERTA DE SEGURIDAD ⚠️\n\n" + e.message);
-                    }
-                }
-            };
-            submit();
+        if (isGameOver) {
+            submitScore();
         }
-    }, [isGameOver, score]);
+    }, [isGameOver]);
 
     // --- Interaction ---
 
@@ -290,17 +394,19 @@ const NeonMatchPage = () => {
         if (selectedPiece === null) {
             setSelectedPiece(index);
         } else {
-            // Check adjacency
-            const isAdjacent = [
-                selectedPiece - 1,
-                selectedPiece + 1,
-                selectedPiece - width,
-                selectedPiece + width
-            ].includes(index);
+            // Strict Adjacency Check (Prevent Wrapping)
+            const currentRow = Math.floor(selectedPiece / width);
+            const targetRow = Math.floor(index / width);
+            const currentCol = selectedPiece % width;
+            const targetCol = index % width;
 
-            if (isAdjacent) {
+            const isHorizontal = currentRow === targetRow && Math.abs(currentCol - targetCol) === 1;
+            const isVertical = currentCol === targetCol && Math.abs(currentRow - targetRow) === 1;
+
+            if (isHorizontal || isVertical) {
                 // 1. Create swapped board
-                const tempBoard = [...currentColorArrangement];
+                const tempBoard = [...currentColorArrangement]; // Copy array
+                // Swap objects
                 const temp = tempBoard[index];
                 tempBoard[index] = tempBoard[selectedPiece];
                 tempBoard[selectedPiece] = temp;
@@ -309,26 +415,17 @@ const NeonMatchPage = () => {
                 const matchResult = getBoardAfterMatches(tempBoard);
 
                 if (matchResult) {
-                    // Valid Move!
-                    // Apply the Cleared Board (not just the swapped one)
-                    setCurrentColorArrangement(matchResult.newBoard);
-                    setScore(s => s + matchResult.scoreIncrease);
+                    // Valid Move! 
+                    // CRITICAL CHANGE: We only apply the SWAP here.
+                    // We DO NOT calculate score or clear blocks yet.
+                    // We let the Game Loop pick up the match in the next tick (150-300ms later).
+                    // This creates the visual effect: Swap Animation -> Pause -> Match Disappears.
+                    setCurrentColorArrangement(tempBoard);
 
-                    // Add floating text (user triggered match)
-                    matchResult.matchCenters.forEach(center => {
-                        const newText: FloatingText = {
-                            id: nextIdRef.current++,
-                            x: center.x,
-                            y: center.y,
-                            value: matchResult.scoreIncrease
-                        };
-                        setFloatingTexts(prev => [...prev, newText]);
-                        setTimeout(() => {
-                            setFloatingTexts(prev => prev.filter(t => t.id !== newText.id));
-                        }, 800);
-                    });
+                    // Note: No setScore() here. loop does it.
                 } else {
-                    // Invalid - Flash error or just do nothing (swap back is automatic because we never set state)
+                    // Invalid - Flash error or just do nothing
+                    // Could add a "shake" animation later
                 }
             }
             setSelectedPiece(null);
@@ -340,9 +437,9 @@ const NeonMatchPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            {/* Background Ambience - Reduced opacity */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#3b82f6_0%,_transparent_60%)] opacity-5 blur-3xl" />
+        <div className="min-h-screen bg-[var(--bg-deep)] flex flex-col items-center justify-center p-4 relative overflow-hidden transition-colors duration-500">
+            {/* Background Ambience - Tropical Water */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--bg-panel)_0%,_transparent_70%)] opacity-20 blur-3xl mix-blend-overlay" />
 
             {/* Main Content Wrapper */}
             <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center gap-12 w-full max-w-7xl z-10 relative">
@@ -365,31 +462,43 @@ const NeonMatchPage = () => {
                                     navigate('/');
                                 }
                             }}
-                            className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors"
+                            className="p-2 rounded-full border border-[var(--text-main)]/20 hover:bg-white/20 text-[var(--text-main)] transition-colors shadow-sm"
                         >
                             <ArrowLeft className="w-6 h-6" />
                         </button>
-                        <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white drop-shadow-md">
+                        <h1 className="text-3xl font-black italic uppercase tracking-tighter text-[var(--text-main)] drop-shadow-md">
                             Neon Match
                         </h1>
                         <div className="w-10" />
                     </div>
 
                     {/* Stats */}
-                    <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-8">
-                        <div className="bg-[#1a1a1e] border border-white/10 rounded-xl p-4 flex flex-col items-center shadow-lg">
-                            <div className="flex items-center gap-2 text-white/50 text-xs font-bold uppercase tracking-wider mb-1">
-                                <Trophy className="w-4 h-4 text-yellow-400" />
-                                Puntuación
+                    <div className="w-full max-w-md grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"> {/* Responsive Grid */}
+                        {/* Puntos */}
+                        <div className="glass-panel rounded-xl p-3 flex flex-col items-center shadow-lg transform hover:scale-105 transition-transform">
+                            <div className="flex items-center gap-1 text-white/80 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                <Trophy className="w-3 h-3 text-[var(--blaze-neon)]" />
+                                Puntos
                             </div>
-                            <span className="text-3xl font-black text-white font-mono">{score}</span>
+                            <span className="text-xl font-black text-white font-mono">{score}</span>
                         </div>
-                        <div className={`bg-[#1a1a1e] border rounded-xl p-4 flex flex-col items-center shadow-lg ${timeLeft < 10 ? 'border-red-500/50 animate-pulse' : 'border-white/10'}`}>
-                            <div className="flex items-center gap-2 text-white/50 text-xs font-bold uppercase tracking-wider mb-1">
-                                <Timer className="w-4 h-4 text-blue-400" />
+
+                        {/* Zoins */}
+                        <div className="glass-panel rounded-xl p-3 flex flex-col items-center shadow-lg transform hover:scale-105 transition-transform">
+                            <div className="flex items-center gap-1 text-white/80 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                <img src="/zoins_icon.jpg" className="w-3 h-3 rounded-full" />
+                                Zoins
+                            </div>
+                            <span className="text-xl font-black text-[var(--zoin-gold)] font-mono">{collectedZoins.toFixed(2)}</span>
+                        </div>
+
+                        {/* Tiempo */}
+                        <div className={`glass-panel border rounded-xl p-3 flex flex-col items-center shadow-lg transform hover:scale-105 transition-transform ${timeLeft < 10 ? 'border-red-500/50 animate-pulse' : 'border-white/20'}`}>
+                            <div className="flex items-center gap-1 text-white/80 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                <Timer className="w-3 h-3 text-white" />
                                 Tiempo
                             </div>
-                            <span className={`text-3xl font-black font-mono ${timeLeft < 10 ? 'text-red-400' : 'text-white'}`}>
+                            <span className={`text-xl font-black font-mono ${timeLeft < 10 ? 'text-red-300' : 'text-white'}`}>
                                 00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
                             </span>
                         </div>
@@ -397,7 +506,8 @@ const NeonMatchPage = () => {
 
                     {/* Board */}
                     <div className={`relative transition-all duration-300 ${isPaused ? 'blur-xl opacity-50' : ''}`}>
-                        <div className="w-[340px] h-[340px] bg-black/60 rounded-2xl border border-white/10 p-2 shadow-2xl flex flex-wrap backdrop-blur-sm relative">
+                        {/* Blue Glass Board Container */}
+                        <div className="w-[340px] h-[340px] bg-[var(--bg-panel)]/40 rounded-2xl border-2 border-white/20 shadow-2xl backdrop-blur-sm relative overflow-hidden">
                             {/* Floating Scores Overlay */}
                             {floatingTexts.map((text) => (
                                 <div
@@ -414,46 +524,140 @@ const NeonMatchPage = () => {
                                 </div>
                             ))}
 
-                            {currentColorArrangement.map((candyColor, index) => (
-                                <div
-                                    key={index}
-                                    className={`w-[40px] h-[40px] rounded-lg cursor-pointer transition-all duration-150 flex items-center justify-center
-                                        ${selectedPiece === index ? 'scale-90 ring-2 ring-white z-20 brightness-110' : 'hover:scale-105 hover:brightness-105'}
-                                    `}
-                                    style={{
-                                        backgroundColor: getBaseColor(candyColor),
-                                        boxShadow: getBaseColor(candyColor) ? `0 0 10px ${getBaseColor(candyColor)}40` : 'none',
-                                        opacity: candyColor === '' ? 0 : 1,
-                                        border: isMultiplier(candyColor) ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.1)'
-                                    }}
-                                    onClick={() => handlePieceClick(index)}
-                                >
-                                    <div className="w-full h-full rounded-md bg-gradient-to-br from-white/20 to-transparent flex items-center justify-center">
-                                        {isMultiplier(candyColor) && <span className="text-xl">🌟</span>}
+                            {currentColorArrangement.map((piece, index) => {
+                                // Calculate Grid Position (Abs)
+                                // 340px container. 320px grid (8x40). 10px padding offset.
+                                const col = index % width;
+                                const row = Math.floor(index / width);
+                                const leftPos = 10 + col * 40;
+                                const topPos = 10 + row * 40;
+
+                                // Render empty slots as invisible layout placeholders to maintain VDOM stability
+                                if (piece.val === '') {
+                                    return <div key={`empty-${index}`} className="absolute" style={{ display: 'none' }} />;
+                                }
+
+                                return (
+                                    <div
+                                        key={piece.id}
+                                        className={`absolute w-[40px] h-[40px] rounded-lg cursor-pointer flex items-center justify-center transition-all duration-[120ms] ease-linear`}
+                                        style={{
+                                            left: leftPos,
+                                            top: topPos,
+                                            zIndex: selectedPiece === index ? 50 : 10,
+                                            backgroundColor: getBaseColor(piece.val),
+                                            boxShadow: getBaseColor(piece.val) ? `0 0 10px ${getBaseColor(piece.val)}40` : 'none',
+                                            border: isMultiplier(piece.val) ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.1)',
+                                            transform: selectedPiece === index ? 'scale(0.9)' : 'scale(1)'
+                                        }}
+                                        onClick={() => handlePieceClick(index)}
+                                    >
+                                        <div className="w-full h-full rounded-md bg-gradient-to-br from-white/20 to-transparent flex items-center justify-center relative">
+                                            {isMultiplier(piece.val) && <span className="text-xl">🌟</span>}
+                                            {getZoinValue(piece.val) > 0 && (
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <span className="text-[10px] font-black text-white bg-black/50 px-1 rounded-full backdrop-blur-sm border border-yellow-400/50">
+                                                        z{getZoinValue(piece.val)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
 
                             {/* Ready State Overlay (Confined to Board) */}
                             {!isPlaying && !isGameOver && (
-                                <div className="absolute inset-0 z-50 bg-[#121214] flex items-center justify-center rounded-2xl animate-in fade-in duration-300">
+                                <div className="absolute inset-0 z-50 bg-[var(--bg-panel)]/95 flex items-center justify-center animate-in fade-in duration-300">
                                     <div className="flex flex-col items-center p-4 text-center">
-                                        <h2 className="text-3xl font-black italic uppercase text-white mb-6 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] tracking-tighter">
+                                        <h2 className="text-3xl font-black italic uppercase text-white mb-6 drop-shadow-sm tracking-tighter">
                                             ¿Listo?
                                         </h2>
 
                                         <div className="flex flex-col gap-3 w-full">
                                             <button
-                                                onClick={() => setIsPlaying(true)}
-                                                className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-black uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(34,197,94,0.4)] text-sm"
+                                                onClick={() => {
+                                                    // Prevent start if limit reached
+                                                    if (!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0) {
+                                                        alert("Límite diario alcanzado. Mejora tu plan.");
+                                                        return;
+                                                    }
+                                                    setIsPlaying(true);
+                                                }}
+                                                className="btn-wood px-6 py-3 text-lg font-black uppercase rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg"
                                             >
                                                 Iniciar
                                             </button>
                                             <button
                                                 onClick={() => navigate('/')}
-                                                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold uppercase rounded-xl transition-all hover:scale-105 active:scale-95 border border-white/10 text-sm"
+                                                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold uppercase rounded-xl transition-all hover:scale-105 active:scale-95 border border-white/20 text-sm"
                                             >
                                                 Volver
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Game Over Overlay (Inside Board) */}
+                            {isGameOver && (
+                                <div className="absolute inset-0 z-50 bg-[var(--bg-panel)]/95 flex items-center justify-center animate-in fade-in duration-300">
+                                    <div className="flex flex-col items-center p-4 text-center w-full">
+                                        <h2 className="text-3xl font-black italic uppercase text-white mb-2 drop-shadow-sm tracking-tighter">
+                                            ¡Fin!
+                                        </h2>
+
+                                        <div className="bg-white/10 rounded-xl p-4 mb-4 border border-white/20 w-full">
+                                            <p className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">Puntuación</p>
+                                            <p className="text-4xl font-black text-white mb-2">{score}</p>
+                                            <div className="h-px w-full bg-white/10 mb-2" />
+                                            <div className="flex items-center justify-center gap-2 text-[var(--zoin-gold)]">
+                                                <img src="/zoins_icon.jpg" className="w-5 h-5 rounded-full" />
+                                                <span className="text-lg font-black">+{collectedZoins.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2 w-full">
+                                            <button
+                                                onClick={async () => {
+                                                    // Check limit locally first
+                                                    if (!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0) {
+                                                        return;
+                                                    }
+
+                                                    setIsGameOver(false);
+                                                    setScore(0);
+                                                    setCollectedZoins(0);
+                                                    setTimeLeft(60);
+                                                    createBoard();
+                                                    // generateZoinQueue(); // Removed as per new logic
+                                                    setIsPlaying(true);
+                                                }}
+                                                disabled={!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0}
+                                                className={`px-6 py-3 text-white font-black uppercase rounded-xl transition-all shadow-lg text-sm ${(!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0)
+                                                    ? 'bg-gray-500 cursor-not-allowed opacity-50 hidden'
+                                                    : 'btn-wood hover:scale-105 active:scale-95'
+                                                    }`}
+                                            >
+                                                Jugar de Nuevo
+                                            </button>
+
+                                            {/* Limit Reached Message */}
+                                            {!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0 && (
+                                                <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-center animate-pulse">
+                                                    <p className="text-red-200 font-bold text-sm uppercase mb-1">
+                                                        Límite Diario Alcanzado ({membership})
+                                                    </p>
+                                                    <p className="text-white/80 text-xs">
+                                                        Vuelve mañana o mejora tu plan a <span className="text-[var(--blaze-neon)] font-black">Coral/Perla</span> para jugar más.
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={handleFinish}
+                                                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold uppercase rounded-xl transition-all hover:scale-105 active:scale-95 border border-white/20 text-sm"
+                                            >
+                                                Volver al Menu
                                             </button>
                                         </div>
                                     </div>
@@ -472,65 +676,28 @@ const NeonMatchPage = () => {
 
             {/* Pause Modal */}
             {isPaused && (
-                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-[#121214] border border-yellow-500/30 w-full max-w-sm rounded-2xl p-8 text-center shadow-[0_0_50px_rgba(234,179,8,0.2)]">
-                        <h2 className="text-4xl font-black italic uppercase text-white mb-2 drop-shadow-md">¡Juego Pausado!</h2>
-                        <p className="text-white/60 mb-8">Si sales ahora, se guardará tu puntuación actual.</p>
+                <div className="absolute inset-0 z-50 bg-[var(--bg-deep)]/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="glass-panel w-full max-w-sm rounded-2xl p-8 text-center shadow-2xl">
+                        <h2 className="text-4xl font-black italic uppercase text-white mb-2 drop-shadow-sm">¡Juego Pausado!</h2>
+                        <p className="text-white/80 mb-8">Si sales ahora, se guardará tu puntuación actual.</p>
 
                         <div className="flex flex-col gap-3">
                             <button
                                 onClick={() => setIsPaused(false)}
-                                className="w-full bg-green-500 hover:bg-green-600 text-white font-black uppercase py-4 rounded-xl transition-all active:scale-95 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                                className="btn-wood w-full py-4 text-xl"
                             >
                                 Seguir Jugando
                             </button>
                             <button
-                                onClick={async () => {
-                                    if (score > 0) {
-                                        try {
-                                            await apiRequest('/scores', { method: 'POST', body: JSON.stringify({ amount: score, game: 'neon-match' }) });
-                                        } catch (e: any) {
-                                            console.error("Error submitting score:", e);
-                                            if (e.message && e.message.includes('congelada')) {
-                                                alert("⚠️ ALERTA DE SEGURIDAD ⚠️\n\n" + e.message);
-                                            }
-                                        }
-                                    }
+                                onClick={() => {
+                                    submitScore();
                                     navigate('/');
                                 }}
-                                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold uppercase py-4 rounded-xl transition-all active:scale-95"
+                                className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold uppercase py-4 rounded-xl transition-all active:scale-95"
                             >
                                 Salir y Guardar
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-
-            {/* Game Over */}
-            {isGameOver && (
-                <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-[#121214] border border-blue-500/30 w-full max-w-sm rounded-2xl p-8 text-center shadow-[0_0_50px_rgba(59,130,246,0.2)] relative overflow-hidden">
-                        <h2 className="text-4xl font-black italic uppercase text-white mb-2 drop-shadow-md">¡Tiempo Agotado!</h2>
-                        <p className="text-white/60 mb-8">La partida ha terminado.</p>
-
-                        <div className="bg-black/40 rounded-xl p-6 mb-8 border border-white/5">
-                            <p className="text-sm font-bold text-white/40 uppercase tracking-widest mb-2">Puntuación Final</p>
-                            <p className="text-5xl font-black text-white mb-4">{score}</p>
-                            <div className="h-px w-full bg-white/10 mb-4" />
-                            <div className="flex items-center justify-center gap-2 text-[var(--zoin-gold)]">
-                                <img src="/zoins_icon.jpg" className="w-6 h-6 rounded-full" />
-                                <span className="text-xl font-black">+{(score / 100000).toFixed(2)} Zoins</span>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleFinish}
-                            className="w-full bg-blue-600/20 border border-blue-500/50 text-blue-400 font-black uppercase py-4 rounded-xl hover:bg-blue-600/30 transition-all active:scale-95"
-                        >
-                            Volver al Menu
-                        </button>
                     </div>
                 </div>
             )}

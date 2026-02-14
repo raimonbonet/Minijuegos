@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Mail, Lock, User, ArrowRight, X } from 'lucide-react';
-import { apiRequest } from '../lib/api';
+import { apiRequest, API_URL } from '../lib/api';
 
 interface RegisterModalProps {
     isOpen: boolean;
@@ -34,7 +34,7 @@ export default function RegisterModal({ isOpen, onClose }: RegisterModalProps) {
     };
 
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:3000/auth/google';
+        window.location.href = `${API_URL}/auth/google`;
     };
 
     // Modal Content

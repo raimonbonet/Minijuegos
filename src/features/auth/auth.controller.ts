@@ -49,19 +49,38 @@ export class AuthController {
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     async googleAuthRedirect(@Request() req, @Response() res) {
-        const result = await this.authService.googleLogin(req);
+        console.log('AuthController.googleAuthRedirect hit');
+        try {
+            const result = await this.authService.googleLogin(req);
+            console.log('AuthService.googleLogin success. New User:', result.isNewUser);
 
-        // Redirect to frontend with token
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const token = result.access_token;
-        const isNewUser = result.isNewUser;
+            // Redirect to frontend with token
+            // Ensure no trailing slash
+            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            if (frontendUrl.endsWith('/')) {
+                frontendUrl = frontendUrl.slice(0, -1);
+            }
 
-        // Redirect to dashboard with welcome flag for new users
-        if (isNewUser) {
-            const userName = result.user.nombre || 'Usuario';
-            res.redirect(`${frontendUrl}/?token=${token}&welcome=true&name=${encodeURIComponent(userName)}`);
-        } else {
-            res.redirect(`${frontendUrl}/?token=${token}`);
+            const token = result.access_token;
+            const isNewUser = result.isNewUser;
+            const user: any = result.user;
+            const userName = user.nombre || user.username || 'Usuario';
+
+            let redirectUrl = `${frontendUrl}/?token=${token}`;
+            if (isNewUser) {
+                redirectUrl += `&welcome=true&name=${encodeURIComponent(userName)}`;
+            }
+
+            console.log('Redirecting to:', redirectUrl);
+            res.redirect(302, redirectUrl);
+        } catch (error) {
+            console.error('Error in googleAuthRedirect:', error);
+            // Redirect to frontend login with error
+            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            if (frontendUrl.endsWith('/')) {
+                frontendUrl = frontendUrl.slice(0, -1);
+            }
+            res.redirect(302, `${frontendUrl}/login?error=GoogleAuthFailed`);
         }
     }
 

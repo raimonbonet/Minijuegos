@@ -82,18 +82,25 @@ let AuthService = class AuthService {
         let user = await this.usersService.findOneByGoogleId(req.user.googleId);
         let isNewUser = false;
         if (!user) {
-            console.log('Creating new Google user...');
-            user = await this.usersService.create({
-                email: req.user.email,
-                googleId: req.user.googleId,
-                nombre: req.user.firstName,
-                apellidos: req.user.lastName,
-                username: `user_${req.user.googleId.substr(0, 8)}`,
-                profileCompleted: false,
-            });
-            isNewUser = true;
-            console.log('Creating wallet for new user:', user.id);
-            await this.walletService.createWallet(user.id);
+            const existingUser = await this.usersService.findOneByEmail(req.user.email);
+            if (existingUser) {
+                console.log('Linking Google account to existing user:', existingUser.id);
+                user = await this.usersService.update(existingUser.id, { googleId: req.user.googleId });
+            }
+            else {
+                console.log('Creating new Google user...');
+                user = await this.usersService.create({
+                    email: req.user.email,
+                    googleId: req.user.googleId,
+                    nombre: req.user.firstName,
+                    apellidos: req.user.lastName,
+                    username: `user_${req.user.googleId.substr(0, 8)}`,
+                    profileCompleted: false,
+                });
+                isNewUser = true;
+                console.log('Creating wallet for new user:', user.id);
+                await this.walletService.createWallet(user.id);
+            }
         }
         else if (!user.profileCompleted) {
             user = await this.usersService.updateProfile(user.id, { profileCompleted: true });
@@ -107,7 +114,11 @@ let AuthService = class AuthService {
         };
     }
     async getFullProfile(userId) {
-        return this.usersService.findOne(userId);
+        const user = await this.usersService.findOne(userId);
+        if (!user)
+            return null;
+        const { password, ...result } = user;
+        return { ...result, hasPassword: !!password };
     }
     async register(email, pass, username) {
         const existingUser = await this.usersService.findOneByEmail(email);

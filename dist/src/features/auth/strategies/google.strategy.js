@@ -24,16 +24,31 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
         });
     }
     async validate(accessToken, refreshToken, profile, done) {
-        const { name, emails, photos, id } = profile;
-        const user = {
-            googleId: id,
-            email: emails[0].value,
-            firstName: name.givenName,
-            lastName: name.familyName,
-            picture: photos[0].value,
-            accessToken,
-        };
-        done(null, user);
+        try {
+            console.log('Google Profile received:', JSON.stringify(profile, null, 2));
+            const { name, emails, photos, id } = profile;
+            const email = emails && emails[0] ? emails[0].value : null;
+            const firstName = name ? name.givenName : 'User';
+            const lastName = name ? name.familyName : '';
+            const picture = photos && photos[0] ? photos[0].value : '';
+            if (!email) {
+                console.error("No email in Google profile");
+                return done(new Error("No email associated with Google account"), false);
+            }
+            const user = {
+                googleId: id,
+                email,
+                firstName,
+                lastName,
+                picture,
+                accessToken,
+            };
+            done(null, user);
+        }
+        catch (error) {
+            console.error("Error in GoogleStrategy validate:", error);
+            done(error, false);
+        }
     }
 };
 exports.GoogleStrategy = GoogleStrategy;

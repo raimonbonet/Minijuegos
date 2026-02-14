@@ -18,9 +18,8 @@ export declare class AuthService {
             id: string;
             email: string;
             username: string;
-            googleId: string | null;
-            dni: string | null;
             password: string | null;
+            googleId: string | null;
             nombre: string | null;
             apellidos: string | null;
             fechaNacimiento: Date | null;
@@ -28,8 +27,11 @@ export declare class AuthService {
             Zoins: import("@prisma/client-runtime-utils").Decimal;
             isAdmin: boolean;
             membership: import("@prisma/client").$Enums.MembershipType;
+            dailyGamesPlayed: number;
+            lastDailyReset: Date;
             profileCompleted: boolean;
             isFrozen: boolean;
+            dni: string | null;
             affiliateName: string | null;
             createdAt: Date;
             updatedAt: Date;
@@ -38,12 +40,11 @@ export declare class AuthService {
         access_token: string;
     }>;
     getFullProfile(userId: string): Promise<{
+        hasPassword: boolean;
         id: string;
         email: string;
         username: string;
         googleId: string | null;
-        dni: string | null;
-        password: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -51,8 +52,11 @@ export declare class AuthService {
         Zoins: import("@prisma/client-runtime-utils").Decimal;
         isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
+        dailyGamesPlayed: number;
+        lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -75,9 +79,8 @@ export declare class AuthService {
         id: string;
         email: string;
         username: string;
-        googleId: string | null;
-        dni: string | null;
         password: string | null;
+        googleId: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -85,8 +88,11 @@ export declare class AuthService {
         Zoins: import("@prisma/client-runtime-utils").Decimal;
         isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
+        dailyGamesPlayed: number;
+        lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;
@@ -95,9 +101,8 @@ export declare class AuthService {
         id: string;
         email: string;
         username: string;
-        googleId: string | null;
-        dni: string | null;
         password: string | null;
+        googleId: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -105,8 +110,11 @@ export declare class AuthService {
         Zoins: import("@prisma/client-runtime-utils").Decimal;
         isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
+        dailyGamesPlayed: number;
+        lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;

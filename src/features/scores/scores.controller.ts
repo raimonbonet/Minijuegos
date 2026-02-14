@@ -9,13 +9,19 @@ export class ScoresController {
 
     @Post()
     @UseGuards(JwtAuthGuard)
-    async create(@Request() req, @Body() body: { amount: number; game?: string }) {
+    async create(@Request() req, @Body() body: { amount: number; game?: string; zoins?: number }) {
         try {
-            return await this.scoresService.create(req.user.userId, body.amount, body.game);
+            return await this.scoresService.create(req.user.userId, body.amount, body.game, body.zoins);
         } catch (error: any) {
             console.error('Error creating score:', error);
             throw new HttpException(error.message || 'Error creating score', HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    async getMyScores(@Request() req) {
+        return this.scoresService.getUserScores(req.user.userId);
     }
 
     @Get('top/:game')

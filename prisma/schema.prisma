@@ -22,6 +22,8 @@ model User {
   Zoins           Decimal  @default(0.0) @db.Decimal(10, 2)
   isAdmin         Boolean  @default(false)
   membership      MembershipType @default(FREE)
+  dailyGamesPlayed Int     @default(0)
+  lastDailyReset   DateTime @default(now())
   profileCompleted Boolean @default(false)
   isFrozen        Boolean  @default(false)
   dni             String?  @unique
@@ -80,7 +82,7 @@ enum TransactionType {
 
 enum MembershipType {
   FREE
-  STARTER
-  PRO
-  LEGENDARY
+  PALMERA
+  CORAL
+  PERLA
 }

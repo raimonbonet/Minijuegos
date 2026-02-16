@@ -4,7 +4,9 @@ import { Prisma, User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {
+        console.log('UsersService initialized (Schema Updated)');
+    }
 
     async findOneByEmail(email: string): Promise<User | null> {
         return this.prisma.user.findUnique({
@@ -67,28 +69,68 @@ export class UsersService {
     async canPlay(userId: string): Promise<boolean> {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: { membership: true, dailyGamesPlayed: true, isAdmin: true }
+            select: { membership: true, dailyGamesLeft: true, extraGames: true, isAdmin: true }
         });
 
         if (!user) return false;
-        if (user.isAdmin) return true; // Admins have unlimited games
 
         const limit = this.getDailyLimit(user.membership);
-        return user.dailyGamesPlayed < limit;
+
+        // Allow play if games left > 0 OR has extra games
+        return user.dailyGamesLeft > 0 || user.extraGames > 0;
     }
 
-    async incrementDailyGames(userId: string): Promise<void> {
-        await this.prisma.user.update({
+    async consumeDailyGame(userId: string): Promise<void> {
+        const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            data: { dailyGamesPlayed: { increment: 1 } }
+            select: { membership: true, dailyGamesLeft: true, extraGames: true }
         });
+
+        if (!user) return;
+
+        if (user.dailyGamesLeft > 0) {
+            // Consume daily free game
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { dailyGamesLeft: { decrement: 1 } }
+            });
+        } else if (user.extraGames > 0) {
+            // Consume extra game
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { extraGames: { decrement: 1 } }
+            });
+        }
     }
 
     async resetAllDailyGames(): Promise<void> {
+        // Reset Logic: Set dailyGamesLeft to the plan limit for each membership type
+
+        // 1. FREE -> 3
         await this.prisma.user.updateMany({
-            data: { dailyGamesPlayed: 0, lastDailyReset: new Date() }
+            where: { membership: 'FREE' },
+            data: { dailyGamesLeft: 3, lastDailyReset: new Date() }
         });
-        console.log(`[UsersService] Daily games reset for all users at ${new Date().toISOString()}`);
+
+        // 2. PALMERA -> 8
+        await this.prisma.user.updateMany({
+            where: { membership: 'PALMERA' },
+            data: { dailyGamesLeft: 8, lastDailyReset: new Date() }
+        });
+
+        // 3. CORAL -> 15
+        await this.prisma.user.updateMany({
+            where: { membership: 'CORAL' },
+            data: { dailyGamesLeft: 15, lastDailyReset: new Date() }
+        });
+
+        // 4. PERLA -> 25
+        await this.prisma.user.updateMany({
+            where: { membership: 'PERLA' },
+            data: { dailyGamesLeft: 25, lastDailyReset: new Date() }
+        });
+
+        console.log(`[UsersService] Daily games reset (refilled) for all users at ${new Date().toISOString()}`);
     }
     async changePassword(userId: string, newPasswordHash: string): Promise<void> {
         await this.prisma.user.update({

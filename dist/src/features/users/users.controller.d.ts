@@ -8,12 +8,17 @@ export declare class UsersController {
         fechaNacimiento?: string;
         dni?: string;
         sexo?: string;
+        address?: string;
+        postalCode?: string;
+        city?: string;
+        province?: string;
     }): Promise<{
         id: string;
         email: string;
         username: string;
-        password: string | null;
         googleId: string | null;
+        dni: string | null;
+        password: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -21,11 +26,15 @@ export declare class UsersController {
         Zoins: import("@prisma/client-runtime-utils").Decimal;
         isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
-        dailyGamesPlayed: number;
+        dailyGamesLeft: number;
+        extraGames: number;
         lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
-        dni: string | null;
+        address: string | null;
+        postalCode: string | null;
+        city: string | null;
+        province: string | null;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;

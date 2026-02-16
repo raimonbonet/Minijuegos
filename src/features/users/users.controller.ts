@@ -9,13 +9,17 @@ export class UsersController {
 
     @UseGuards(JwtAuthGuard)
     @Put('profile')
-    async updateProfile(@Request() req, @Body() body: { nombre?: string; apellidos?: string; fechaNacimiento?: string; dni?: string; sexo?: string }) {
+    async updateProfile(@Request() req, @Body() body: { nombre?: string; apellidos?: string; fechaNacimiento?: string; dni?: string; sexo?: string; address?: string; postalCode?: string; city?: string; province?: string }) {
         return this.usersService.updateProfile(req.user.userId, {
             nombre: body.nombre,
             apellidos: body.apellidos,
             fechaNacimiento: body.fechaNacimiento ? new Date(body.fechaNacimiento) : undefined,
             dni: body.dni,
             sexo: body.sexo,
+            address: body.address,
+            postalCode: body.postalCode,
+            city: body.city,
+            province: body.province,
             profileCompleted: true // If they update, we assume generic completion
         });
     }

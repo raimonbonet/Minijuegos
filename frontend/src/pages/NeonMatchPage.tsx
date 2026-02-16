@@ -7,12 +7,12 @@ import Leaderboard from '../components/Leaderboard';
 // ... (constants and types remain same)
 const width = 8;
 const candyColors = [
-    '#ef4444',
-    '#3b82f6',
-    '#22c55e',
-    '#a855f7',
-    '#f59e0b',
-    '#ec4899',
+    '#FFD700', // Gold (Zoins)
+    '#00FFFF', // Aqua (Tropical)
+    '#76FF03', // Lime (Kai)
+    '#D500F9', // Purple (Deep)
+    '#8D6E63', // Brown (Lighter - Wood tone)
+    '#FFE0B2', // Sand (Darker - Warm Sand)
 ];
 
 type FloatingText = {
@@ -42,12 +42,12 @@ const NeonMatchPage = () => {
     const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
     const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
     const [collectedZoins, setCollectedZoins] = useState(0);
+    const [isSwapping, setIsSwapping] = useState(false);
 
     const nextIdRef = useRef(0);
     const nextPieceIdRef = useRef(0);
 
     // Derived State from Context
-    const isAdmin = user?.isAdmin || false;
     const membership = user?.membership || 'FREE';
 
     const getLimit = (mem: string) => {
@@ -61,8 +61,9 @@ const NeonMatchPage = () => {
     };
 
     const limit = getLimit(membership);
-    const played = typeof user?.dailyGamesPlayed === 'number' ? user.dailyGamesPlayed : 0;
-    const dailyGamesLeft = isAdmin ? 9999 : Math.max(0, limit - played);
+    const dailyGamesLeft = typeof user?.dailyGamesLeft === 'number' ? user.dailyGamesLeft : 0;
+    const extraGames = typeof user?.extraGames === 'number' ? user.extraGames : 0;
+    const canPlay = dailyGamesLeft > 0 || extraGames > 0;
 
 
     // --- Helper Logic (Immutable) ---
@@ -389,7 +390,7 @@ const NeonMatchPage = () => {
     // --- Interaction ---
 
     const handlePieceClick = (index: number) => {
-        if (!isPlaying || isGameOver || isPaused) return;
+        if (!isPlaying || isGameOver || isPaused || isSwapping) return;
 
         if (selectedPiece === null) {
             setSelectedPiece(index);
@@ -404,28 +405,31 @@ const NeonMatchPage = () => {
             const isVertical = currentCol === targetCol && Math.abs(currentRow - targetRow) === 1;
 
             if (isHorizontal || isVertical) {
-                // 1. Create swapped board
+                // 1. Create swapped board (Visual Swap)
                 const tempBoard = [...currentColorArrangement]; // Copy array
-                // Swap objects
                 const temp = tempBoard[index];
                 tempBoard[index] = tempBoard[selectedPiece];
                 tempBoard[selectedPiece] = temp;
 
+                setIsSwapping(true);
+                setCurrentColorArrangement(tempBoard);
+
                 // 2. Check Valid
+                // We verify if this new board HAS matches.
                 const matchResult = getBoardAfterMatches(tempBoard);
 
                 if (matchResult) {
-                    // Valid Move! 
-                    // CRITICAL CHANGE: We only apply the SWAP here.
-                    // We DO NOT calculate score or clear blocks yet.
-                    // We let the Game Loop pick up the match in the next tick (150-300ms later).
-                    // This creates the visual effect: Swap Animation -> Pause -> Match Disappears.
-                    setCurrentColorArrangement(tempBoard);
-
-                    // Note: No setScore() here. loop does it.
+                    // Valid Move: Keep the swap.
+                    // The game loop will pick up the match.
+                    setTimeout(() => {
+                        setIsSwapping(false);
+                    }, 300);
                 } else {
-                    // Invalid - Flash error or just do nothing
-                    // Could add a "shake" animation later
+                    // Invalid Move: Revert after delay
+                    setTimeout(() => {
+                        setCurrentColorArrangement(currentColorArrangement); // Revert to original
+                        setIsSwapping(false);
+                    }, 300);
                 }
             }
             setSelectedPiece(null);
@@ -578,8 +582,8 @@ const NeonMatchPage = () => {
                                             <button
                                                 onClick={() => {
                                                     // Prevent start if limit reached
-                                                    if (!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0) {
-                                                        alert("Límite diario alcanzado. Mejora tu plan.");
+                                                    if (!canPlay) {
+                                                        alert("Límite diario alcanzado y no tienes partidas extra.");
                                                         return;
                                                     }
                                                     setIsPlaying(true);
@@ -621,7 +625,7 @@ const NeonMatchPage = () => {
                                             <button
                                                 onClick={async () => {
                                                     // Check limit locally first
-                                                    if (!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0) {
+                                                    if (!canPlay) {
                                                         return;
                                                     }
 
@@ -633,8 +637,8 @@ const NeonMatchPage = () => {
                                                     // generateZoinQueue(); // Removed as per new logic
                                                     setIsPlaying(true);
                                                 }}
-                                                disabled={!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0}
-                                                className={`px-6 py-3 text-white font-black uppercase rounded-xl transition-all shadow-lg text-sm ${(!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0)
+                                                disabled={!canPlay}
+                                                className={`px-6 py-3 text-white font-black uppercase rounded-xl transition-all shadow-lg text-sm ${!canPlay
                                                     ? 'bg-gray-500 cursor-not-allowed opacity-50 hidden'
                                                     : 'btn-wood hover:scale-105 active:scale-95'
                                                     }`}
@@ -643,13 +647,13 @@ const NeonMatchPage = () => {
                                             </button>
 
                                             {/* Limit Reached Message */}
-                                            {!isAdmin && dailyGamesLeft !== null && dailyGamesLeft <= 0 && (
+                                            {!canPlay && (
                                                 <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-center animate-pulse">
                                                     <p className="text-red-200 font-bold text-sm uppercase mb-1">
                                                         Límite Diario Alcanzado ({membership})
                                                     </p>
                                                     <p className="text-white/80 text-xs">
-                                                        Vuelve mañana o mejora tu plan a <span className="text-[var(--blaze-neon)] font-black">Coral/Perla</span> para jugar más.
+                                                        Vuelve mañana, mejora tu plan o compra un <span className="text-[var(--blaze-neon)] font-black">Pack de Partidas</span> en el Mercado.
                                                     </p>
                                                 </div>
                                             )}

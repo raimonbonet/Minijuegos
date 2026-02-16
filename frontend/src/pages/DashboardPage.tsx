@@ -1,5 +1,8 @@
-import { useNavigate } from 'react-router-dom';
-import { Zap } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { apiRequest } from '../lib/api';
+import { Modal } from '../components/ui/Modal';
 
 // --- Shared Components (Would be in /components in real app) ---
 
@@ -26,19 +29,27 @@ const GameCard = ({ title, category, image, active, isVip, onClick }: { title: s
     </div>
 );
 
-const MarketCard = ({ name, price, image }: { name: string, price: number, image?: string }) => (
-    <div className="glass-panel p-3 rounded-2xl flex flex-col group cursor-pointer hover:bg-[var(--bg-panel)]/80 transition-all hover:-translate-y-1 hover:border-[var(--kai-green)]/50 hover:shadow-lg">
+const MarketCard = ({ id, name, price, image, onClick, disabled }: { id: string, name: string, price: number, image?: string, onClick: (id: string, price: number, name: string) => void, disabled?: boolean }) => (
+    <div
+        onClick={() => !disabled && onClick(id, price, name)}
+        className={`glass-panel p-3 rounded-2xl flex flex-col group transition-all border border-transparent
+            ${disabled ? 'opacity-70 cursor-not-allowed grayscale-[0.5]' : 'cursor-pointer hover:bg-[var(--bg-panel)]/80 hover:-translate-y-1 hover:border-[var(--kai-green)]/50 hover:shadow-lg'}
+        `}
+    >
         <div className="aspect-square w-full rounded-xl bg-[var(--bg-deep)]/20 mb-3 overflow-hidden relative border border-white/10">
-            {image && <img src={image} alt={name} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />}
+            {image && <img src={image} alt={name} className={`w-full h-full object-cover transition-all duration-500 ${!disabled && 'group-hover:scale-110'}`} />}
             <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg border border-[var(--text-main)]/10 flex items-center gap-1 shadow-sm">
                 <img src="/zoins_icon.jpg" alt="Z" className="w-3 h-3 rounded-full" />
                 <span className="text-[var(--text-main)] font-black text-xs">{price}</span>
             </div>
         </div>
         <div>
-            {/* Contrast fix: Text white on Blue panel */}
             <h4 className="text-sm font-bold text-white group-hover:text-[var(--zoin-gold)] transition-colors leading-tight mb-1">{name}</h4>
-            <span className="text-[10px] text-[var(--kai-soft)] font-bold uppercase tracking-wider border border-[var(--kai-soft)]/30 px-1.5 py-0.5 rounded-md bg-[var(--kai-green)]/20">Exclusivo</span>
+            <span className={`text-[10px] font-bold uppercase tracking-wider border px-1.5 py-0.5 rounded-md 
+                ${disabled ? 'text-gray-400 border-gray-400/30 bg-gray-500/10' : 'text-[var(--kai-soft)] border-[var(--kai-soft)]/30 bg-[var(--kai-green)]/20'}
+            `}>
+                {disabled ? 'Login' : 'Comprar'}
+            </span>
         </div>
     </div>
 );
@@ -47,6 +58,61 @@ const MarketCard = ({ name, price, image }: { name: string, price: number, image
 
 export default function DashboardPage() {
     const navigate = useNavigate();
+    const { user, refreshUser } = useOutletContext<any>();
+
+    // Modal States
+    const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, itemId?: string, price?: number, name?: string } | null>(null);
+    const [usernameModal, setUsernameModal] = useState(false);
+    const [newUsername, setNewUsername] = useState('');
+    const [feedbackModal, setFeedbackModal] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleBuyClick = (itemId: string, price: number, name: string) => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        setPurchaseModal({ isOpen: true, itemId, price, name });
+    };
+
+    const confirmPurchase = async () => {
+        if (!purchaseModal) return;
+
+        // If it's username change, close purchase modal and open username input
+        if (purchaseModal.itemId === 'change-username') {
+            setPurchaseModal(null);
+            setUsernameModal(true);
+            return;
+        }
+
+        await processTransaction(purchaseModal.itemId!, purchaseModal.price!);
+    };
+
+    const processTransaction = async (itemId: string, price: number, payload?: any) => {
+        setLoading(true);
+        if (purchaseModal) setPurchaseModal(null);
+        if (usernameModal) setUsernameModal(false);
+
+        try {
+            await apiRequest('/market/buy', {
+                method: 'POST',
+                body: JSON.stringify({ itemId, payload })
+            });
+
+            setFeedbackModal({ type: 'success', message: '¡Compra realizada con éxito!' });
+            await refreshUser(); // Update balance
+        } catch (error: any) {
+            console.error(error);
+            setFeedbackModal({ type: 'error', message: error.message || 'Error al realizar la compra' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUsernameSubmit = () => {
+        if (!newUsername.trim()) return;
+        processTransaction('change-username', 5, { newUsername });
+    };
 
     return (
         <div className="min-h-screen bg-[var(--bg-deep)] pb-32 transition-colors duration-500">
@@ -57,16 +123,79 @@ export default function DashboardPage() {
                 <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-[var(--bg-panel)]/10 rounded-full blur-[100px] mix-blend-multiply" />
             </div>
 
+            {/* Modals */}
+            {purchaseModal && (
+                <Modal
+                    isOpen={!!purchaseModal}
+                    onClose={() => setPurchaseModal(null)}
+                    title="Confirmar Compra"
+                >
+                    <div className="space-y-4 text-center">
+                        <div className="w-16 h-16 bg-[var(--zoin-gold)]/20 rounded-full flex items-center justify-center mx-auto text-3xl">🛒</div>
+                        <p className="font-bold text-lg">¿Quieres comprar <span className="text-[var(--text-main)] font-black">{purchaseModal.name}</span>?</p>
+                        <p className="text-sm opacity-80">Coste: <span className="font-bold text-[var(--zoin-gold)]">{purchaseModal.price} Zoins</span></p>
+
+                        <div className="flex gap-3 justify-center mt-6">
+                            <button onClick={() => setPurchaseModal(null)} className="px-4 py-2 rounded-xl font-bold uppercase text-xs border border-[var(--text-main)]/20 hover:bg-black/5">Cancelar</button>
+                            <button onClick={confirmPurchase} disabled={loading} className="px-6 py-2 rounded-xl font-black uppercase text-xs bg-[var(--text-main)] text-[var(--bg-deep)] hover:brightness-110 shadow-lg">
+                                {loading ? 'Procesando...' : 'Confirmar'}
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            <Modal
+                isOpen={usernameModal}
+                onClose={() => setUsernameModal(false)}
+                title="Nuevo Nombre"
+            >
+                <div className="space-y-4">
+                    <p className="text-sm font-bold opacity-80">Introduce tu nuevo nombre de usuario:</p>
+                    <input
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        className="w-full bg-white/50 border-2 border-[var(--text-main)]/10 rounded-xl px-4 py-2 font-bold focus:border-[var(--text-main)] outline-none"
+                        placeholder="Ej: MasterGamer99"
+                        autoFocus
+                    />
+                    <div className="flex gap-3 justify-end mt-4">
+                        <button onClick={() => setUsernameModal(false)} className="px-4 py-2 rounded-xl font-bold uppercase text-xs border border-[var(--text-main)]/20 hover:bg-black/5">Cancelar</button>
+                        <button onClick={handleUsernameSubmit} disabled={loading || !newUsername} className="px-6 py-2 rounded-xl font-black uppercase text-xs bg-[var(--text-main)] text-[var(--bg-deep)] hover:brightness-110 shadow-lg">
+                            {loading ? 'Guardando...' : 'GUARDAR'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {feedbackModal && (
+                <Modal
+                    isOpen={!!feedbackModal}
+                    onClose={() => setFeedbackModal(null)}
+                    title={feedbackModal.type === 'success' ? '¡Éxito!' : 'Error'}
+                >
+                    <div className="text-center space-y-4">
+                        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto text-3xl ${feedbackModal.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                            {feedbackModal.type === 'success' ? <CheckCircle /> : <AlertCircle />}
+                        </div>
+                        <p className="font-bold">{feedbackModal.message}</p>
+                        <button onClick={() => setFeedbackModal(null)} className="w-full px-4 py-3 rounded-xl font-black uppercase text-xs bg-[var(--text-main)] text-[var(--bg-deep)] hover:brightness-110 mt-4">
+                            Entendido
+                        </button>
+                    </div>
+                </Modal>
+            )}
+
             {/* Main Content Container */}
-            <main className="pt-8 px-4 max-w-lg mx-auto md:max-w-5xl lg:max-w-6xl space-y-16 relative z-10">
+            <main className="pt-4 px-4 max-w-lg mx-auto md:max-w-5xl lg:max-w-6xl space-y-8 relative z-10">
 
                 {/* Hero / Welcome */}
-                <header className="text-center space-y-4 py-8">
+                <header className="text-center space-y-2 py-4">
                     <h1 className="text-4xl md:text-6xl font-black text-[var(--text-main)] uppercase italic tracking-tighter drop-shadow-sm">
-                        Compite. <span className="text-[var(--blaze-neon)] drop-shadow-[0_2px_10px_rgba(255,159,28,0.4)]">Gana.</span>
+                        ZOOPLAY
                     </h1>
-                    <p className="text-[var(--text-main)]/80 text-sm md:text-lg max-w-md mx-auto font-medium">
-                        La plataforma de eSports casual definitiva.
+                    <p className="text-[var(--text-main)]/80 text-xs md:text-base max-w-2xl mx-auto font-bold leading-relaxed">
+                        Tu web de entretenimiento donde puedes conseguir premios en la tienda mientras juegas.
                     </p>
                 </header>
 
@@ -84,30 +213,28 @@ export default function DashboardPage() {
                         <button onClick={() => navigate('/admin')} className="text-xs text-[var(--text-muted)] font-bold hover:text-[var(--text-main)] cursor-pointer transition-colors">VER RANKING ABSOLUTO &rarr;</button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        <GameCard
-                            title="Neon Match"
-                            category="Puzzle"
-                            image="https://images.unsplash.com/photo-1596727147705-09a27c541a74?auto=format&fit=crop&q=80&w=500" // Tropical Fruit/Puzzle abstract
-                            active={true}
-                            isVip={true}
-                            onClick={() => navigate('/game/neon-match')} // Link to game
+                    {/* Single Hero Game Card */}
+                    <div
+                        onClick={() => navigate('/game/neon-match')}
+                        className="relative w-full aspect-[16/9] md:aspect-[2.5/1] rounded-3xl overflow-hidden cursor-pointer group shadow-2xl transition-all hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,159,28,0.3)] border-4 border-[var(--blaze-neon)]"
+                    >
+                        {/* Background Image */}
+                        <img
+                            src="/tropical_match3_banner.png"
+                            alt="Neon Match Tropical"
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
-                        <GameCard
-                            title="Cyber Drift"
-                            category="Racing"
-                            image="https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&q=80&w=500"
-                        />
-                        <GameCard
-                            title="Pixel Raid"
-                            category="Acción"
-                            image="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=500"
-                        />
-                        <GameCard
-                            title="Void Hunter"
-                            category="Estrategia"
-                            image="https://images.unsplash.com/photo-1535025183041-0991a977e25b?auto=format&fit=crop&q=80&w=500"
-                        />
+
+                        {/* Subtle Gradient for Button Contrast */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+
+                        {/* Content - Just the Button, Bottom Right */}
+                        <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8">
+                            <button className="bg-white text-[var(--text-main)] px-8 py-3 rounded-xl font-black uppercase tracking-wider hover:scale-105 transition-transform shadow-lg border-b-4 border-gray-300 active:border-b-0 active:translate-y-1 flex items-center gap-2">
+                                <Zap className="w-5 h-5 fill-current text-[var(--zoin-gold)]" />
+                                JUGAR AHORA
+                            </button>
+                        </div>
                     </div>
                 </section>
 
@@ -130,16 +257,38 @@ export default function DashboardPage() {
                                     </h2>
                                     <p className="text-sm text-[var(--kai-green)] font-bold">Canjea tus victorias por premios reales.</p>
                                 </div>
-                                <div className="flex gap-2">
-                                    <div className="px-3 py-1 bg-[var(--bg-deep)] rounded border-2 border-[var(--text-main)]/10 text-xs font-bold text-[var(--text-main)] hover:bg-white cursor-pointer shadow-sm transition-all">Filtrar por Precio</div>
-                                </div>
+                                {!user && (
+                                    <div className="px-3 py-1 bg-[var(--text-main)] text-[var(--bg-deep)] rounded border-2 border-[var(--text-main)] text-xs font-bold shadow-sm">
+                                        Inicia sesión para comprar
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                                <MarketCard name="Bono de Tiempo x10" price={500} image="https://images.unsplash.com/photo-1614680376593-902f74cf0d41?auto=format&fit=crop&w=300&q=80" />
-                                <MarketCard name="Avatar: Golden Tiger" price={1200} image="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80" />
-                                <MarketCard name="Entrada Torneo" price={250} image="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=300&q=80" />
-                                <MarketCard name="Pack Misterioso" price={800} image="https://images.unsplash.com/photo-1605806616949-1e87b487bc2a?auto=format&fit=crop&w=300&q=80" />
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                                <MarketCard
+                                    id="change-username"
+                                    name="Cambio de Nombre"
+                                    price={5}
+                                    image="/market_username_change.png"
+                                    onClick={(id, price, name) => handleBuyClick(id, price, name)}
+                                    disabled={!user}
+                                />
+                                <MarketCard
+                                    id="pack-20"
+                                    name="Pack 20 Partidas"
+                                    price={0.50}
+                                    image="/market_pack_20.png"
+                                    onClick={(id, price, name) => handleBuyClick(id, price, name)}
+                                    disabled={!user}
+                                />
+                                <MarketCard
+                                    id="pack-50"
+                                    name="Pack 50 Partidas"
+                                    price={1.00}
+                                    image="/market_pack_50.png"
+                                    onClick={(id, price, name) => handleBuyClick(id, price, name)}
+                                    disabled={!user}
+                                />
                             </div>
                         </div>
                     </div>

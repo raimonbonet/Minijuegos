@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma/prisma.service';
 import { TransactionType, Wallet } from '@prisma/client';
 import { Prisma } from '@prisma/client'; // Keep Prisma import for Decimal
@@ -34,13 +34,13 @@ export class WalletService {
             });
 
             if (!wallet) {
-                throw new Error('Wallet not found');
+                throw new BadRequestException('Wallet not found');
             }
 
             const newBalance = new Prisma.Decimal(wallet.balance as any).add(amount);
 
             if (newBalance.lt(0)) {
-                throw new Error('Insufficient funds');
+                throw new BadRequestException('Insufficient funds');
             }
 
             const updatedWallet = await tx.wallet.update({

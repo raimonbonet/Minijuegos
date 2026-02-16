@@ -38,12 +38,13 @@ export class ScoresService {
             data: {
                 userId,
                 amount: finalAmount,
+                zoinsEarned: zoinsEarned,
                 game,
             },
         });
 
         // 5. Increment Daily Games Counter
-        await this.usersService.incrementDailyGames(userId);
+        await this.usersService.consumeDailyGame(userId);
 
         // 6. Secure Transaction (Credit Zoins)
         if (zoinsEarned > 0) {

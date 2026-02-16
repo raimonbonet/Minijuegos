@@ -16,6 +16,7 @@ let UsersService = class UsersService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
+        console.log('UsersService initialized (Schema Updated)');
     }
     async findOneByEmail(email) {
         return this.prisma.user.findUnique({
@@ -68,26 +69,51 @@ let UsersService = class UsersService {
     async canPlay(userId) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: { membership: true, dailyGamesPlayed: true, isAdmin: true }
+            select: { membership: true, dailyGamesLeft: true, extraGames: true, isAdmin: true }
         });
         if (!user)
             return false;
-        if (user.isAdmin)
-            return true;
         const limit = this.getDailyLimit(user.membership);
-        return user.dailyGamesPlayed < limit;
+        return user.dailyGamesLeft > 0 || user.extraGames > 0;
     }
-    async incrementDailyGames(userId) {
-        await this.prisma.user.update({
+    async consumeDailyGame(userId) {
+        const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            data: { dailyGamesPlayed: { increment: 1 } }
+            select: { membership: true, dailyGamesLeft: true, extraGames: true }
         });
+        if (!user)
+            return;
+        if (user.dailyGamesLeft > 0) {
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { dailyGamesLeft: { decrement: 1 } }
+            });
+        }
+        else if (user.extraGames > 0) {
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { extraGames: { decrement: 1 } }
+            });
+        }
     }
     async resetAllDailyGames() {
         await this.prisma.user.updateMany({
-            data: { dailyGamesPlayed: 0, lastDailyReset: new Date() }
+            where: { membership: 'FREE' },
+            data: { dailyGamesLeft: 3, lastDailyReset: new Date() }
         });
-        console.log(`[UsersService] Daily games reset for all users at ${new Date().toISOString()}`);
+        await this.prisma.user.updateMany({
+            where: { membership: 'PALMERA' },
+            data: { dailyGamesLeft: 8, lastDailyReset: new Date() }
+        });
+        await this.prisma.user.updateMany({
+            where: { membership: 'CORAL' },
+            data: { dailyGamesLeft: 15, lastDailyReset: new Date() }
+        });
+        await this.prisma.user.updateMany({
+            where: { membership: 'PERLA' },
+            data: { dailyGamesLeft: 25, lastDailyReset: new Date() }
+        });
+        console.log(`[UsersService] Daily games reset (refilled) for all users at ${new Date().toISOString()}`);
     }
     async changePassword(userId, newPasswordHash) {
         await this.prisma.user.update({

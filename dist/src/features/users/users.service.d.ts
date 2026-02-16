@@ -12,7 +12,7 @@ export declare class UsersService {
     findOne(id: string): Promise<User | null>;
     getDailyLimit(membership: string): number;
     canPlay(userId: string): Promise<boolean>;
-    incrementDailyGames(userId: string): Promise<void>;
+    consumeDailyGame(userId: string): Promise<void>;
     resetAllDailyGames(): Promise<void>;
     changePassword(userId: string, newPasswordHash: string): Promise<void>;
 }

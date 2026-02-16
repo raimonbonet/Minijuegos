@@ -14,6 +14,10 @@ const ProfileData = ({ user, refreshUser }: { user: any, refreshUser: () => void
         dni: user.dni || '',
         fechaNacimiento: user.fechaNacimiento ? new Date(user.fechaNacimiento).toISOString().split('T')[0] : '',
         sexo: user.sexo || '',
+        address: user.address || '',
+        postalCode: user.postalCode || '',
+        city: user.city || '',
+        province: user.province || '',
     });
     const [loading, setLoading] = useState(false);
 
@@ -96,6 +100,47 @@ const ProfileData = ({ user, refreshUser }: { user: any, refreshUser: () => void
                     />
                 </div>
 
+                <div className="col-span-full border-t border-[var(--text-main)]/10 my-4" />
+
+                <div className="col-span-full md:col-span-2 space-y-2">
+                    <label className="text-xs font-black text-[var(--text-main)] uppercase tracking-wider">Dirección</label>
+                    <input
+                        disabled={!isEditing}
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        placeholder="Calle, número, piso..."
+                        className={`w-full bg-white border rounded-xl px-4 py-3 text-[var(--text-main)] font-bold transition-all ${isEditing ? 'border-[var(--text-main)] focus:ring-2 focus:ring-[var(--text-main)]/20 shadow-lg' : 'border-[var(--text-main)]/20'}`}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-xs font-black text-[var(--text-main)] uppercase tracking-wider">Código Postal</label>
+                    <input
+                        disabled={!isEditing}
+                        value={formData.postalCode}
+                        onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                        className={`w-full bg-white border rounded-xl px-4 py-3 text-[var(--text-main)] font-bold transition-all ${isEditing ? 'border-[var(--text-main)] focus:ring-2 focus:ring-[var(--text-main)]/20 shadow-lg' : 'border-[var(--text-main)]/20'}`}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs font-black text-[var(--text-main)] uppercase tracking-wider">Población</label>
+                    <input
+                        disabled={!isEditing}
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className={`w-full bg-white border rounded-xl px-4 py-3 text-[var(--text-main)] font-bold transition-all ${isEditing ? 'border-[var(--text-main)] focus:ring-2 focus:ring-[var(--text-main)]/20 shadow-lg' : 'border-[var(--text-main)]/20'}`}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-xs font-black text-[var(--text-main)] uppercase tracking-wider">Provincia</label>
+                    <input
+                        disabled={!isEditing}
+                        value={formData.province}
+                        onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                        className={`w-full bg-white border rounded-xl px-4 py-3 text-[var(--text-main)] font-bold transition-all ${isEditing ? 'border-[var(--text-main)] focus:ring-2 focus:ring-[var(--text-main)]/20 shadow-lg' : 'border-[var(--text-main)]/20'}`}
+                    />
+                </div>
+
                 {isEditing && (
                     <div className="col-span-full flex justify-end gap-3 mt-4">
                         <button
@@ -107,6 +152,10 @@ const ProfileData = ({ user, refreshUser }: { user: any, refreshUser: () => void
                                     dni: user.dni || '',
                                     fechaNacimiento: user.fechaNacimiento ? new Date(user.fechaNacimiento).toISOString().split('T')[0] : '',
                                     sexo: user.sexo || '',
+                                    address: user.address || '',
+                                    postalCode: user.postalCode || '',
+                                    city: user.city || '',
+                                    province: user.province || '',
                                 });
                             }}
                             className="px-6 py-2 rounded-xl text-[var(--text-main)] hover:bg-[var(--text-main)]/10 transition-all font-bold uppercase tracking-wider text-xs border border-[var(--text-main)]/20"
@@ -147,7 +196,7 @@ const ProfileSubscription = ({ user }: { user: any }) => (
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-[var(--zoin-gold)] shadow-[0_0_8px_rgba(255,215,0,0.8)]" />
-                        <span className="font-mono font-bold tracking-wide">Partidas Diarias: {user.membership === 'FREE' ? 3 : user.membership === 'PALMERA' ? 8 : user.membership === 'CORAL' ? 15 : '∞'}</span>
+                        <span className="font-mono font-bold tracking-wide">Partidas Restantes: {user.dailyGamesLeft}/{user.membership === 'FREE' ? 3 : user.membership === 'PALMERA' ? 8 : user.membership === 'CORAL' ? 15 : '∞'}</span>
                     </div>
                 </div>
 
@@ -163,19 +212,68 @@ const ProfileSubscription = ({ user }: { user: any }) => (
 );
 
 const ProfileOrders = ({ user }: { user: any }) => {
-    const [transactions] = useState([]);
-    console.log("Orders for user:", user.id);
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            try {
+                const data = await apiRequest('/wallet/transactions');
+                // Filter for payments (purchases) only
+                const purchases = data.filter((tx: any) =>
+                    tx.type === 'PAYMENT' ||
+                    (tx.description && tx.description.startsWith('Purchase:'))
+                );
+                setTransactions(purchases);
+            } catch (error) {
+                console.error("Failed to load transactions", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchTransactions();
+    }, []);
 
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-black text-[var(--text-main)] uppercase italic">Mis Pedidos</h2>
-            {transactions.length === 0 ? (
+
+            {loading ? (
+                <div className="text-center py-8 opacity-50 font-bold">Cargando historial...</div>
+            ) : transactions.length === 0 ? (
                 <div className="text-center py-12 border-2 border-dashed border-[var(--text-main)]/20 rounded-2xl bg-white/30">
                     <ShoppingBag className="w-12 h-12 text-[var(--text-main)]/30 mx-auto mb-4" />
                     <p className="text-[var(--text-main)]/60 font-mono font-bold">No hay transacciones recientes.</p>
                 </div>
             ) : (
-                <div>Listado de transacciones...</div>
+                <div className="bg-white/50 backdrop-blur-sm rounded-2xl border-2 border-[var(--text-main)]/10 overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-[var(--text-main)]/5 border-b-2 border-[var(--text-main)]/10">
+                                <tr>
+                                    <th className="p-4 text-xs font-black uppercase tracking-wider text-[var(--text-main)]/70">Fecha</th>
+                                    <th className="p-4 text-xs font-black uppercase tracking-wider text-[var(--text-main)]/70">Descripción</th>
+                                    <th className="p-4 text-xs font-black uppercase tracking-wider text-[var(--text-main)]/70 text-right">Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--text-main)]/10">
+                                {transactions.map((tx) => (
+                                    <tr key={tx.id} className="hover:bg-white/50 transition-colors">
+                                        <td className="p-4 text-sm font-bold text-[var(--text-main)]/80 font-mono">
+                                            {new Date(tx.createdAt).toLocaleDateString()} <span className="text-[10px] opacity-60 ml-1">{new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </td>
+                                        <td className="p-4 text-sm font-black text-[var(--text-main)]">
+                                            {tx.description ? tx.description.replace('Purchase: ', '') : tx.type}
+                                        </td>
+                                        <td className={`p-4 text-sm font-black text-right font-mono ${Number(tx.amount) > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                            {Number(tx.amount) > 0 ? '+' : ''}{Number(tx.amount).toFixed(2)} Z
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             )}
         </div>
     );
@@ -274,25 +372,90 @@ const ProfileSecurity = ({ user, refreshUser }: { user: any, refreshUser: () => 
     );
 };
 
-const ProfileStats = ({ user }: { user: any }) => (
-    <div className="space-y-6">
-        <h2 className="text-2xl font-black text-[var(--text-main)] uppercase italic">Estadísticas</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white border-2 border-[var(--text-main)]/10 p-4 rounded-xl text-center shadow-sm">
-                <div className="text-xs font-bold text-[var(--text-main)]/60 uppercase tracking-wider mb-1">Partidas Jugadas</div>
-                <div className="text-3xl font-black text-[var(--text-main)] font-mono">{user.dailyGamesPlayed ?? 0}</div>
+const ProfileStats = ({ user }: { user: any }) => {
+    const [scores, setScores] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchScores = async () => {
+            try {
+                const data = await apiRequest('/scores/me');
+                setScores(data);
+            } catch (error) {
+                console.error("Failed to load scores", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchScores();
+    }, []);
+
+    const totalZoinsWon = scores.reduce((sum, score) => sum + (Number(score.zoinsEarned) || 0), 0);
+    const totalScore = scores.reduce((sum, score) => sum + (Number(score.amount) || 0), 0);
+
+    return (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-black text-[var(--text-main)] uppercase italic">Estadísticas</h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white border-2 border-[var(--text-main)]/10 p-4 rounded-xl text-center shadow-sm">
+                    <div className="text-xs font-bold text-[var(--text-main)]/60 uppercase tracking-wider mb-1">Partidas Disp.</div>
+                    <div className="text-3xl font-black text-[var(--text-main)] font-mono">{user.dailyGamesLeft ?? 0}</div>
+                </div>
+                <div className="bg-white border-2 border-[var(--text-main)]/10 p-4 rounded-xl text-center shadow-sm">
+                    <div className="text-xs font-bold text-[var(--text-main)]/60 uppercase tracking-wider mb-1">Puntuación Total</div>
+                    <div className="text-3xl font-black text-[var(--text-main)] font-mono">{totalScore.toLocaleString()}</div>
+                </div>
+                <div className="bg-white border-2 border-[var(--text-main)]/10 p-4 rounded-xl text-center shadow-sm col-span-2 md:col-span-2">
+                    <div className="text-xs font-bold text-[var(--text-main)]/60 uppercase tracking-wider mb-1">Total Zoins Ganados</div>
+                    <div className="text-3xl font-black text-[var(--zoin-gold)] font-mono drop-shadow-sm">+{totalZoinsWon.toFixed(2)} Z</div>
+                </div>
             </div>
-            <div className="bg-white border-2 border-[var(--text-main)]/10 p-4 rounded-xl text-center shadow-sm">
-                <div className="text-xs font-bold text-[var(--text-main)]/60 uppercase tracking-wider mb-1">Puntuación Total</div>
-                <div className="text-3xl font-black text-[var(--text-main)] font-mono">-</div>
-            </div>
+
+            <h3 className="text-lg font-black text-[var(--text-main)] uppercase italic mb-4">Historial de Partidas</h3>
+
+            {loading ? (
+                <div className="text-center py-8 opacity-50 font-bold">Cargando estadísticas...</div>
+            ) : scores.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-[var(--text-main)]/20 rounded-2xl bg-white/30">
+                    <BarChart2 className="w-12 h-12 text-[var(--text-main)]/30 mx-auto mb-4" />
+                    <p className="text-[var(--text-main)]/60 font-mono font-bold">No hay partidas registradas.</p>
+                </div>
+            ) : (
+                <div className="bg-white/50 backdrop-blur-sm rounded-2xl border-2 border-[var(--text-main)]/10 overflow-hidden shadow-sm h-96 overflow-y-auto custom-scrollbar">
+                    <table className="w-full text-left">
+                        <thead className="bg-[var(--text-main)]/5 border-b-2 border-[var(--text-main)]/10 sticky top-0 backdrop-blur-md">
+                            <tr>
+                                <th className="p-4 text-xs font-black uppercase tracking-wider text-[var(--text-main)]/70">Fecha</th>
+                                <th className="p-4 text-xs font-black uppercase tracking-wider text-[var(--text-main)]/70">Juego</th>
+                                <th className="p-4 text-xs font-black uppercase tracking-wider text-[var(--text-main)]/70 text-right">Puntuación</th>
+                                <th className="p-4 text-xs font-black uppercase tracking-wider text-[var(--text-main)]/70 text-right">Zoins</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--text-main)]/10">
+                            {scores.map((score) => (
+                                <tr key={score.id} className="hover:bg-white/50 transition-colors">
+                                    <td className="p-4 text-sm font-bold text-[var(--text-main)]/80 font-mono">
+                                        {new Date(score.createdAt).toLocaleDateString()} <span className="text-[10px] opacity-60 ml-1">{new Date(score.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </td>
+                                    <td className="p-4 text-sm font-black text-[var(--text-main)] uppercase">
+                                        {score.game}
+                                    </td>
+                                    <td className="p-4 text-sm font-bold text-[var(--text-main)] text-right font-mono">
+                                        {score.amount.toLocaleString()}
+                                    </td>
+                                    <td className="p-4 text-sm font-black text-right font-mono text-[var(--zoin-gold)]">
+                                        +{Number(score.zoinsEarned || 0).toFixed(2)} Z
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
-        {/* Graph or Table placeholder */}
-        <div className="h-64 bg-white/40 rounded-2xl flex items-center justify-center border-2 border-[var(--text-main)]/10 border-dashed">
-            <BarChart2 className="w-12 h-12 text-[var(--text-main)]/20" />
-        </div>
-    </div>
-);
+    );
+};
 
 
 // --- Main Page Component ---

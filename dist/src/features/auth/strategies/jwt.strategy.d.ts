@@ -21,10 +21,15 @@ export declare class JwtStrategy extends JwtStrategy_base {
         Zoins: import("@prisma/client-runtime-utils").Decimal;
         isAdmin: boolean;
         membership: import("@prisma/client").$Enums.MembershipType;
-        dailyGamesPlayed: number;
+        dailyGamesLeft: number;
+        extraGames: number;
         lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        address: string | null;
+        postalCode: string | null;
+        city: string | null;
+        province: string | null;
         affiliateName: string | null;
         createdAt: Date;
         updatedAt: Date;

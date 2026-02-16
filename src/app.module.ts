@@ -11,6 +11,7 @@ import { PaymentsModule } from './features/payments/payments.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
 import { AdminModule } from './features/admin/admin.module';
 import { ScoresModule } from './features/scores/scores.module';
+import { MarketModule } from './features/market/market.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ScoresModule } from './features/scores/scores.module';
     PaymentsModule,
     AdminModule,
     ScoresModule,
+    MarketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

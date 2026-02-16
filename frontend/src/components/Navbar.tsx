@@ -1,5 +1,5 @@
 
-import { User, LogIn, LogOut, Gamepad2, CreditCard, ShoppingBag, Shield, BarChart2 } from 'lucide-react';
+import { User, LogIn, LogOut, Gamepad2, CreditCard, ShoppingBag, Shield, BarChart2, Ticket } from 'lucide-react';
 
 interface NavbarProps {
     user: any;
@@ -27,22 +27,27 @@ export const Navbar = ({ user, onLoginClick, onLogoutClick }: NavbarProps) => (
                     <div className="flex items-center gap-2 bg-[var(--bg-deep)] px-4 py-1.5 rounded-full border-2 border-[var(--blaze-neon)]/50 shadow-inner cursor-pointer hover:brightness-110 transition-all">
                         <Gamepad2 className="w-5 h-5 text-[var(--blaze-neon)]" />
                         <span className="font-black text-xl text-[var(--text-main)] tracking-tight font-mono">
-                            {user.isAdmin ? '∞' : Math.max(0, (function (membership) {
-                                switch (membership) {
-                                    case 'PALMERA': return 8;
-                                    case 'CORAL': return 15;
-                                    case 'PERLA': return 25;
-                                    default: return 3;
-                                }
-                            })(user.membership || 'FREE') - (user.dailyGamesPlayed || 0))}
+                            <span className="font-black text-xl text-[var(--text-main)] tracking-tight font-mono">
+                                {user.dailyGamesLeft ?? 3}
+                            </span>
                         </span>
                     </div>
+
+                    {/* Extra Games Counter - Only show if > 0 */}
+                    {(user.extraGames > 0) && (
+                        <div className="flex items-center gap-2 bg-[var(--bg-deep)] px-4 py-1.5 rounded-full border-2 border-[#D500F9]/50 shadow-inner cursor-pointer hover:brightness-110 transition-all" title="Partidas Extra (Packs)">
+                            <Ticket className="w-5 h-5 text-[#D500F9]" />
+                            <span className="font-black text-xl text-[var(--text-main)] tracking-tight font-mono">
+                                {user.extraGames}
+                            </span>
+                        </div>
+                    )}
 
                     {/* Wallet - High Contrast Sand on Wood */}
                     <div className="flex items-center gap-2 bg-[var(--bg-deep)] px-4 py-1.5 rounded-full border-2 border-[var(--text-main)]/20 shadow-inner cursor-pointer hover:brightness-110 transition-all">
                         <img src="/zoins_icon.jpg" alt="Zoins" className="w-5 h-5 rounded-full object-cover border border-[var(--text-main)]/10" />
                         <span className="font-black text-xl text-[var(--text-main)] tracking-tight font-mono">
-                            {Number(user.Zoins || user.wallet?.balance || 0).toFixed(2)}
+                            {Number(user.wallet?.balance ?? user.Zoins ?? 0).toFixed(2)}
                         </span>
                     </div>
 

@@ -37,11 +37,11 @@ let WalletService = class WalletService {
                 where: { userId },
             });
             if (!wallet) {
-                throw new Error('Wallet not found');
+                throw new common_1.BadRequestException('Wallet not found');
             }
             const newBalance = new client_1.Prisma.Decimal(wallet.balance).add(amount);
             if (newBalance.lt(0)) {
-                throw new Error('Insufficient funds');
+                throw new common_1.BadRequestException('Insufficient funds');
             }
             const updatedWallet = await tx.wallet.update({
                 where: { userId },

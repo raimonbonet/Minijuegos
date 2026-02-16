@@ -62,6 +62,10 @@ let UsersController = class UsersController {
             fechaNacimiento: body.fechaNacimiento ? new Date(body.fechaNacimiento) : undefined,
             dni: body.dni,
             sexo: body.sexo,
+            address: body.address,
+            postalCode: body.postalCode,
+            city: body.city,
+            province: body.province,
             profileCompleted: true
         });
     }

@@ -43,7 +43,8 @@ export default function SubscriptionsPage() {
             color: 'text-emerald-600',
             bg: 'bg-emerald-50',
             border: 'border-emerald-200',
-            button: 'bg-emerald-600 text-white'
+            button: 'bg-emerald-600 text-white',
+            locked: true
         },
         {
             id: 'CORAL',
@@ -63,7 +64,8 @@ export default function SubscriptionsPage() {
             color: 'text-[var(--blaze-neon)]',
             bg: 'bg-orange-50',
             border: 'border-[var(--blaze-neon)]',
-            button: 'bg-[var(--blaze-neon)] text-white'
+            button: 'bg-[var(--blaze-neon)] text-white',
+            locked: true
         },
         {
             id: 'PERLA',
@@ -83,7 +85,8 @@ export default function SubscriptionsPage() {
             color: 'text-purple-600',
             bg: 'bg-purple-50',
             border: 'border-purple-200',
-            button: 'bg-purple-600 text-white'
+            button: 'bg-purple-600 text-white',
+            locked: true
         }
     ];
 
@@ -110,12 +113,16 @@ export default function SubscriptionsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
                     {plans.map((plan) => {
                         const isCurrent = user?.membership === plan.id;
+                        // @ts-ignore
+                        const isLocked = plan.locked;
+
                         return (
                             <div
                                 key={plan.id}
                                 className={`
-                                    relative p-6 rounded-3xl transition-all duration-300 transform hover:-translate-y-2
-                                    ${plan.popular ? 'shadow-2xl scale-105 z-10' : 'shadow-xl hover:shadow-2xl'}
+                                    relative p-6 rounded-3xl transition-all duration-300 transform 
+                                    ${plan.popular ? 'shadow-2xl scale-105 z-10' : 'shadow-xl'}
+                                    ${isLocked ? 'grayscale-[0.8] opacity-80 hover:grayscale-0 hover:opacity-100 hover:-translate-y-1' : 'hover:-translate-y-2 hover:shadow-2xl'}
                                     ${plan.bg} border-2 ${plan.border}
                                 `}
                             >
@@ -172,17 +179,19 @@ export default function SubscriptionsPage() {
                                     {/* Action Button */}
                                     <div className="pt-4">
                                         <button
-                                            onClick={() => handleSubscribe(plan.id)}
-                                            disabled={isCurrent}
+                                            onClick={() => !isLocked && handleSubscribe(plan.id)}
+                                            disabled={isCurrent || isLocked}
                                             className={`
                                                 w-full py-4 rounded-xl font-black uppercase tracking-wider text-sm transition-all shadow-lg
                                                 ${isCurrent
                                                     ? 'bg-[var(--text-main)]/10 text-[var(--text-main)]/40 cursor-not-allowed'
-                                                    : `${plan.button} hover:brightness-110 active:scale-95`
+                                                    : isLocked
+                                                        ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                                                        : `${plan.button} hover:brightness-110 active:scale-95`
                                                 }
                                             `}
                                         >
-                                            {isCurrent ? 'Plan Actual' : 'Seleccionar Plan'}
+                                            {isCurrent ? 'Plan Actual' : isLocked ? 'PRÓXIMAMENTE' : 'Seleccionar Plan'}
                                         </button>
                                     </div>
                                 </div>

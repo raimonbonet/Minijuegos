@@ -10,19 +10,49 @@ interface NavbarProps {
 export const Navbar = ({ user, onLoginClick, onLogoutClick }: NavbarProps) => (
     <nav className="fixed top-0 w-full z-50 h-16 px-4 flex items-center justify-between shadow-xl bg-wood transition-colors duration-500">
         {/* Brand */}
-        <div
-            className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform"
-            onClick={() => window.location.href = '/'}
-        >
-            <span className="text-2xl font-black tracking-tighter uppercase italic text-white drop-shadow-md">
-                Zooplay
-            </span>
+        <div className="relative group flex items-center gap-2 cursor-pointer h-full">
+            <div
+                className="flex items-center gap-2 hover:scale-105 transition-transform"
+                onClick={() => window.location.href = '/'}
+            >
+                <span className="text-2xl font-black tracking-tighter uppercase italic text-white drop-shadow-md">
+                    Zooplay
+                </span>
+            </div>
+
+            {/* Dropdown - Visible on Hover */}
+            <div className="absolute top-full left-0 mt-0 w-48 bg-[var(--bg-deep)] border-2 border-[var(--text-main)]/20 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top-left z-50 overflow-hidden">
+                <div className="py-2">
+                    <a href="/#market" className="flex items-center gap-3 px-4 py-3 text-[var(--text-main)] hover:text-[var(--bg-deep)] hover:bg-[var(--text-main)] transition-colors">
+                        <ShoppingBag className="w-4 h-4" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Tienda</span>
+                    </a>
+                    <a href="/subscriptions" className="flex items-center gap-3 px-4 py-3 text-[var(--text-main)] hover:text-[var(--bg-deep)] hover:bg-[var(--text-main)] transition-colors">
+                        <CreditCard className="w-4 h-4" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Suscripciones</span>
+                    </a>
+                </div>
+            </div>
         </div>
 
         {/* Right Actions */}
         <div className="flex items-center gap-4">
             {user ? (
                 <>
+                    {/* Admin Button - Only for Admins */}
+                    {user.isAdmin && (
+                        <button
+                            onClick={() => window.location.href = '/admin'}
+                            className="flex items-center gap-2 bg-red-600/20 px-3 py-1.5 rounded-full border-2 border-red-500/50 shadow-inner cursor-pointer hover:bg-red-600/40 transition-all mr-2"
+                            title="Panel de Administración"
+                        >
+                            <Shield className="w-4 h-4 text-red-400" />
+                            <span className="font-black text-xs text-red-100 uppercase tracking-wider hidden md:block">
+                                Admin
+                            </span>
+                        </button>
+                    )}
+
                     {/* Games Counter */}
                     <div className="flex items-center gap-2 bg-[var(--bg-deep)] px-4 py-1.5 rounded-full border-2 border-[var(--blaze-neon)]/50 shadow-inner cursor-pointer hover:brightness-110 transition-all">
                         <Gamepad2 className="w-5 h-5 text-[var(--blaze-neon)]" />

@@ -28,4 +28,19 @@ export class ScoresController {
     async getTop(@Param('game') game: string) {
         return this.scoresService.getTop(game);
     }
+
+    @Get('public')
+    async getPublicRankings(
+        @Request() req,
+    ) {
+        // Query params are manually parsed from req.query since we don't use DTO or explicit @Query decorator here to keep it simple,
+        // or we can use @Query. Let's use Request query for now as per minimal changes.
+        // Actually, cleaner with @Query. I'll import Query.
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 20;
+        const game = req.query.game as string;
+        const search = req.query.search as string;
+
+        return this.scoresService.getPublicRankings(page, limit, game, search);
+    }
 }

@@ -10,6 +10,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
     validate(payload: any): Promise<{
         email: any;
         id: string;
+        createdAt: Date;
         username: string;
         googleId: string | null;
         dni: string | null;
@@ -31,7 +32,6 @@ export declare class JwtStrategy extends JwtStrategy_base {
         city: string | null;
         province: string | null;
         affiliateName: string | null;
-        createdAt: Date;
         updatedAt: Date;
         userId: any;
     } | null>;

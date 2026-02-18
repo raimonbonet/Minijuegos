@@ -77,4 +77,37 @@ export class MarketService {
             throw new BadRequestException('Error al procesar la compra. Se ha reembolsado el importe.');
         }
     }
+
+    async purchaseZoins(userId: string, packId: string) {
+        let zoinsAmount = 0;
+        let cost = 0;
+        let description = '';
+
+        switch (packId) {
+            case 'pack-5-zoins':
+                zoinsAmount = 5;
+                cost = 5.00; // EUR
+                description = 'Compra de 5 Zoins';
+                break;
+            case 'pack-10-zoins':
+                zoinsAmount = 10;
+                cost = 10.00; // EUR
+                description = 'Compra de 10 Zoins';
+                break;
+            default:
+                throw new BadRequestException('Invalid pack ID');
+        }
+
+        // Simulate successful payment processing here (e.g. Stripe)
+
+        // Credit the user's wallet
+        await this.walletService.updateBalance(
+            userId,
+            zoinsAmount,
+            TransactionType.DEPOSIT,
+            `${description} (${cost} EUR)`
+        );
+
+        return { success: true, message: `Successfully purchased ${zoinsAmount} Zoins`, newBalance: zoinsAmount };
+    }
 }

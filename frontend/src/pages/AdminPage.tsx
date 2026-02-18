@@ -41,9 +41,9 @@ const AdminNavbar = ({ onLogout }: { onLogout: () => void }) => (
         <div className="flex items-center gap-4">
             <Link
                 to="/"
-                className="text-white/70 hover:text-white transition-colors text-sm font-bold drop-shadow-sm"
+                className="text-white/70 hover:text-white transition-colors text-sm font-bold drop-shadow-sm flex items-center gap-1"
             >
-                Volver al Inicio
+                <span>&larr;</span> Volver al Menú
             </Link>
             <button
                 onClick={onLogout}
@@ -131,45 +131,71 @@ export default function AdminPage() {
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<User | null>(null);
 
+    // Rankings Pagination State
+    const [rankingPage, setRankingPage] = useState(1);
+    const [rankingTotalPages, setRankingTotalPages] = useState(1);
+    const [rankingTotalItems, setRankingTotalItems] = useState(0);
     const [selectedGame, setSelectedGame] = useState<string>('neon-match');
+    const [rankingSearch, setRankingSearch] = useState('');
+
+    const [error, setError] = useState<string | null>(null);
 
     const fetchUsers = async () => {
         setLoading(true);
+        setError(null);
         try {
             const data = await apiRequest(`/admin/users?search=${encodeURIComponent(search)}`);
-            setUsers(data);
+            setUsers(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error(e);
+            setError((e as Error).message);
+            setUsers([]);
         } finally {
             setLoading(false);
         }
     };
 
     const fetchScores = async () => {
-        if (!selectedGame) return;
         setLoading(true);
+        setError(null);
         try {
-            const timestamp = new Date().getTime();
-            const data = await apiRequest(`/admin/rankings-list?game=${encodeURIComponent(selectedGame)}&_t=${timestamp}`);
-            setScores(data);
+            const queryParams = new URLSearchParams({
+                page: rankingPage.toString(),
+                limit: '20',
+                ...(selectedGame && { game: selectedGame }),
+                ...(rankingSearch && { search: rankingSearch }),
+            });
+
+            const response = await apiRequest(`/admin/rankings-list?${queryParams}`);
+            setScores(Array.isArray(response?.data) ? response.data : []);
+            setRankingTotalPages(response?.meta?.totalPages || 1);
+            setRankingTotalItems(response?.meta?.total || 0);
         } catch (e) {
             console.error(e);
+            setError((e as Error).message);
+            setScores([]);
         } finally {
             setLoading(false);
         }
     };
 
-    // Debounce search (only for Users)
+    // Debounce search
     useEffect(() => {
-        if (tab === 'users') {
-            const timer = setTimeout(() => {
+        const timer = setTimeout(() => {
+            if (tab === 'users') {
                 fetchUsers();
-            }, 500);
-            return () => clearTimeout(timer);
-        } else {
-            fetchScores();
-        }
-    }, [search, tab, selectedGame]); // Add selectedGame dependency
+            } else {
+                fetchScores();
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search, rankingSearch, tab, rankingPage, selectedGame]);
+
+    // Reset pagination when filter changes
+    useEffect(() => {
+        setRankingPage(1);
+    }, [selectedGame, rankingSearch]);
+
 
     const handleUpdateZoins = async (amount: number, mode: 'set' | 'add') => {
         if (!editingUser) return;
@@ -248,18 +274,30 @@ export default function AdminPage() {
                     )}
 
                     {tab === 'scores' && (
-                        <div className="relative w-full md:w-64">
-                            <label className="text-xs text-[var(--text-main)]/80 font-bold uppercase tracking-wider mb-2 block pl-1">Filtrar por Juego</label>
-                            <select
-                                value={selectedGame}
-                                onChange={(e) => setSelectedGame(e.target.value)}
-                                className="w-full glass-panel border border-white/20 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-[var(--blaze-neon)]/50 focus:bg-[var(--bg-panel)]/80 transition-all appearance-none cursor-pointer shadow-sm"
-                            >
-                                <option value="neon-match" className="bg-[var(--bg-panel)] text-white">Neon Match</option>
-                                {/* Add more games here in future */}
-                            </select>
-                            <div className="absolute right-4 bottom-3.5 pointer-events-none text-white/50">
-                                ▼
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="relative w-full md:w-64">
+                                <label className="text-xs text-[var(--text-main)]/80 font-bold uppercase tracking-wider mb-2 block pl-1">Filtrar por Juego</label>
+                                <select
+                                    value={selectedGame}
+                                    onChange={(e) => setSelectedGame(e.target.value)}
+                                    className="w-full glass-panel border border-white/20 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-[var(--blaze-neon)]/50 focus:bg-[var(--bg-panel)]/80 transition-all appearance-none cursor-pointer shadow-sm"
+                                >
+                                    <option value="neon-match" className="bg-[var(--bg-panel)] text-white">Neon Match</option>
+                                </select>
+                                <div className="absolute right-4 bottom-3.5 pointer-events-none text-white/50">
+                                    ▼
+                                </div>
+                            </div>
+                            <div className="relative w-full">
+                                <label className="text-xs text-[var(--text-main)]/80 font-bold uppercase tracking-wider mb-2 block pl-1">Buscar Jugador</label>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por usuario..."
+                                    value={rankingSearch}
+                                    onChange={(e) => setRankingSearch(e.target.value)}
+                                    className="w-full glass-panel border border-white/20 rounded-xl px-4 py-3 pl-10 text-white placeholder-white/50 focus:outline-none focus:border-[var(--blaze-neon)]/50 focus:bg-[var(--bg-panel)]/80 transition-all shadow-sm"
+                                />
+                                <Search className="absolute left-3 bottom-3.5 w-5 h-5 text-white/50" />
                             </div>
                         </div>
                     )}
@@ -291,6 +329,12 @@ export default function AdminPage() {
                                 {loading ? (
                                     <tr>
                                         <td colSpan={4} className="p-8 text-center text-white/60 italic">Cargando...</td>
+                                    </tr>
+                                ) : error ? (
+                                    <tr>
+                                        <td colSpan={4} className="p-8 text-center text-red-400 font-bold bg-red-500/10">
+                                            Error: {error}
+                                        </td>
                                     </tr>
                                 ) : (tab === 'users' ? users : scores).length === 0 ? (
                                     <tr>
@@ -362,6 +406,31 @@ export default function AdminPage() {
                             </tbody>
                         </table>
                     </div>
+
+                    {/* Pagination Controls (Only for Scores tab) */}
+                    {tab === 'scores' && (
+                        <div className="flex items-center justify-between px-6 py-4 bg-black/10 border-t border-white/5">
+                            <div className="text-xs font-bold text-white/60">
+                                Mostrando {((rankingPage - 1) * 20) + 1}-{Math.min(rankingPage * 20, rankingTotalItems)} de {rankingTotalItems}
+                            </div>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setRankingPage(p => Math.max(1, p - 1))}
+                                    disabled={rankingPage === 1 || loading}
+                                    className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50 text-xs font-bold text-white transition-all"
+                                >
+                                    Anterior
+                                </button>
+                                <button
+                                    onClick={() => setRankingPage(p => Math.min(rankingTotalPages, p + 1))}
+                                    disabled={rankingPage === rankingTotalPages || loading}
+                                    className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50 text-xs font-bold text-white transition-all"
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
 

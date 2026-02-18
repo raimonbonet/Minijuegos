@@ -7,6 +7,7 @@ import NeonMatchPage from './pages/NeonMatchPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
+import RankingPage from './pages/RankingPage';
 import AdminRoute from './components/AdminRoute';
 import MainLayout from './layouts/MainLayout';
 
@@ -66,6 +67,12 @@ function App() {
               <ProtectedRoute>
                 <SubscriptionsPage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ranking"
+            element={
+              <RankingPage />
             }
           />
           <Route

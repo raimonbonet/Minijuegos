@@ -4,9 +4,9 @@ export declare class TransactionsController {
     constructor(transactionsService: TransactionsService);
     getMyTransactions(req: any): Promise<{
         id: string;
+        amount: import("@prisma/client-runtime-utils").Decimal;
         createdAt: Date;
         type: import("@prisma/client").$Enums.TransactionType;
-        amount: import("@prisma/client-runtime-utils").Decimal;
         description: string | null;
         signature: string;
         walletId: string;

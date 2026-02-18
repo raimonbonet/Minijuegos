@@ -63,32 +63,63 @@ export default function Leaderboard({ game = 'neon-match' }: { game?: string }) 
                 ) : scores.length === 0 ? (
                     <div className="text-white/30 text-xs text-center p-4">Sin puntuaciones aún.</div>
                 ) : (
-                    scores.map((score, index) => (
-                        <div key={index} className={`flex items-center justify-between p-2 rounded-lg border transition-all ${index === 0 ? 'bg-[var(--zoin-gold)]/10 border-[var(--zoin-gold)]/30' : 'bg-white/5 border-white/5'}`}>
-                            <div className="flex items-center gap-3">
-                                {/* Rank */}
-                                <span className={`text-xs font-black w-4 text-center ${index === 0 ? 'text-[var(--zoin-gold)]' : 'text-white/30'}`}>
-                                    #{index + 1}
-                                </span>
+                    scores.map((score, index) => {
+                        // Calculate Effective Rank (Handling Ties)
+                        // If same score as previous, use previous's rank (which is found by looking for the first index of that score)
+                        const sameAsPrev = index > 0 && score.amount === scores[index - 1].amount;
+                        const effectiveRank = sameAsPrev ?
+                            (scores.findIndex(s => s.amount === score.amount) + 1) :
+                            (index + 1);
 
-                                {/* User */}
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-xs font-bold text-white leading-none">
-                                            {score.user.username || score.user.nombre || score.user.email.split('@')[0]}
-                                        </span>
-                                        <MembershipIcon type={score.user.membership} />
+                        let rowClass = 'bg-white/5 border-white/5';
+                        let rankColor = 'text-white/30';
+                        let rewardText = null;
+
+                        if (effectiveRank === 1) {
+                            rowClass = 'bg-[var(--zoin-gold)]/20 border-[var(--zoin-gold)]/30';
+                            rankColor = 'text-[var(--zoin-gold)]';
+                            rewardText = '+3.00 Zoins';
+                        } else if (effectiveRank === 2) {
+                            rowClass = 'bg-slate-400/20 border-slate-400/30';
+                            rankColor = 'text-slate-300';
+                            rewardText = '+1.00 Zoin';
+                        } else if (effectiveRank >= 3 && effectiveRank <= 5) {
+                            rowClass = 'bg-amber-700/20 border-amber-700/30';
+                            rankColor = 'text-amber-500';
+                            rewardText = '+0.15 Zoins';
+                        }
+
+                        return (
+                            <div key={index} className={`flex items-center justify-between p-2 rounded-lg border transition-all ${rowClass}`}>
+                                <div className="flex items-center gap-3">
+                                    {/* Rank */}
+                                    <span className={`text-xs font-black w-4 text-center ${rankColor}`}>
+                                        #{effectiveRank}
+                                    </span>
+
+                                    {/* User */}
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-xs font-bold text-white leading-none">
+                                                {score.user.username || score.user.nombre || score.user.email.split('@')[0]}
+                                            </span>
+                                            <MembershipIcon type={score.user.membership} />
+                                        </div>
+                                        {rewardText && (
+                                            <span className={`text-[9px] font-black uppercase tracking-wider ${rankColor}`}>
+                                                {rewardText}
+                                            </span>
+                                        )}
                                     </div>
-                                    {index === 0 && <span className="text-[9px] text-[var(--zoin-gold)] font-black uppercase tracking-wider">Líder</span>}
                                 </div>
-                            </div>
 
-                            {/* Score */}
-                            <span className="text-sm font-mono font-black text-white tracking-tight">
-                                {score.amount.toLocaleString()}
-                            </span>
-                        </div>
-                    ))
+                                {/* Score */}
+                                <span className="text-sm font-mono font-black text-white tracking-tight">
+                                    {score.amount.toLocaleString()}
+                                </span>
+                            </div>
+                        );
+                    })
                 )}
             </div>
 

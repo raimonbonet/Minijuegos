@@ -6,73 +6,69 @@ import { Modal } from '../components/ui/Modal';
 
 // --- Shared Components (Would be in /components in real app) ---
 
-const GameCard = ({ title, category, image, active, isVip, onClick }: { title: string, category: string, image?: string, active?: boolean, isVip?: boolean, onClick?: () => void }) => (
-    <div onClick={onClick} className={`relative group overflow-hidden rounded-xl aspect-[3/4] cursor-pointer transition-all duration-300 ${active ? 'ring-4 ring-[var(--blaze-neon)] shadow-[0_4px_20px_rgba(255,159,28,0.3)] z-10 scale-[1.02]' : 'opacity-90 hover:opacity-100 hover:scale-105 hover:shadow-xl'}`}>
-        {/* Background Image Placeholder */}
-        <div className="absolute inset-0 bg-[var(--bg-panel)]">
-            {image && <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100" />}
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--text-dark)] via-transparent to-transparent opacity-80" />
-        </div>
 
-        {/* Content */}
-        <div className="absolute bottom-0 left-0 w-full p-5">
-            <div className="flex items-center gap-2 mb-2">
-                <span className="text-[9px] font-black text-white bg-[var(--blaze-neon)] px-1.5 py-0.5 rounded-sm uppercase tracking-wider shadow-sm">{category}</span>
-                {isVip && <span className="text-[9px] font-black text-[var(--text-main)] bg-[var(--zoin-gold)] px-1.5 py-0.5 rounded-sm uppercase tracking-wider animate-pulse">VIP</span>}
-            </div>
-            <h3 className="text-xl font-black text-white leading-none uppercase italic drop-shadow-md">{title}</h3>
 
-            {active && (
-                <div className="mt-2 w-full h-0.5 bg-[var(--blaze-neon)] shadow-[0_0_10px_var(--blaze-neon)]" />
-            )}
-        </div>
-    </div>
-);
+const MarketCard = ({ id, name, price, currency = 'ZOIN', image, onClick, status }: { id: string, name: string, price: number, currency?: 'ZOIN' | 'EUR', image?: string, onClick: (id: string, price: number, name: string, currency: 'ZOIN' | 'EUR') => void, status: 'available' | 'login_required' | 'insufficient_balance' }) => {
+    const disabled = status !== 'available';
+    const label = status === 'login_required' ? 'Login' : status === 'insufficient_balance' ? 'Sin Saldo' : 'Comprar';
 
-const MarketCard = ({ id, name, price, image, onClick, disabled }: { id: string, name: string, price: number, image?: string, onClick: (id: string, price: number, name: string) => void, disabled?: boolean }) => (
-    <div
-        onClick={() => !disabled && onClick(id, price, name)}
-        className={`glass-panel p-3 rounded-2xl flex flex-col group transition-all border border-transparent
+    return (
+        <div
+            onClick={() => !disabled && onClick(id, price, name, currency)}
+            className={`glass-panel p-3 rounded-2xl flex flex-col group transition-all border border-transparent
             ${disabled ? 'opacity-70 cursor-not-allowed grayscale-[0.5]' : 'cursor-pointer hover:bg-[var(--bg-panel)]/80 hover:-translate-y-1 hover:border-[var(--kai-green)]/50 hover:shadow-lg'}
         `}
-    >
-        <div className="aspect-square w-full rounded-xl bg-[var(--bg-deep)]/20 mb-3 overflow-hidden relative border border-white/10">
-            {image && <img src={image} alt={name} className={`w-full h-full object-cover transition-all duration-500 ${!disabled && 'group-hover:scale-110'}`} />}
-            <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg border border-[var(--text-main)]/10 flex items-center gap-1 shadow-sm">
-                <img src="/zoins_icon.jpg" alt="Z" className="w-3 h-3 rounded-full" />
-                <span className="text-[var(--text-main)] font-black text-xs">{price}</span>
+        >
+            <div className="aspect-square w-full rounded-xl bg-[var(--bg-deep)]/20 mb-3 overflow-hidden relative border border-white/10">
+                {image && <img src={image} alt={name} className={`w-full h-full object-cover transition-all duration-500 ${!disabled && 'group-hover:scale-110'}`} />}
+                <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg border border-[var(--text-main)]/10 flex items-center gap-1 shadow-sm">
+                    {currency === 'ZOIN' ? (
+                        <img src="/zoins_icon.jpg" alt="Z" className="w-3 h-3 rounded-full" />
+                    ) : (
+                        <span className="text-black font-black text-xs">€</span>
+                    )}
+                    <span className="text-[var(--text-main)] font-black text-xs">{price}</span>
+                </div>
             </div>
-        </div>
-        <div>
-            <h4 className="text-sm font-bold text-white group-hover:text-[var(--zoin-gold)] transition-colors leading-tight mb-1">{name}</h4>
-            <span className={`text-[10px] font-bold uppercase tracking-wider border px-1.5 py-0.5 rounded-md 
+            <div>
+                <h4 className="text-sm font-bold text-white group-hover:text-[var(--zoin-gold)] transition-colors leading-tight mb-1">{name}</h4>
+                <span className={`text-[10px] font-bold uppercase tracking-wider border px-1.5 py-0.5 rounded-md 
                 ${disabled ? 'text-gray-400 border-gray-400/30 bg-gray-500/10' : 'text-[var(--kai-soft)] border-[var(--kai-soft)]/30 bg-[var(--kai-green)]/20'}
             `}>
-                {disabled ? 'Login' : 'Comprar'}
-            </span>
+                    {label}
+                </span>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // --- Main Page ---
 
 export default function DashboardPage() {
     const navigate = useNavigate();
     const { user, refreshUser } = useOutletContext<any>();
+    const userBalance = user ? Number(user.wallet?.balance ?? user.Zoins ?? 0) : 0;
+
+    const getMarketItemStatus = (price: number, currency: 'ZOIN' | 'EUR' = 'ZOIN'): 'available' | 'login_required' | 'insufficient_balance' => {
+        if (!user) return 'login_required';
+        if (currency === 'EUR') return 'available';
+        if (userBalance < price) return 'insufficient_balance';
+        return 'available';
+    };
 
     // Modal States
-    const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, itemId?: string, price?: number, name?: string } | null>(null);
+    const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, itemId?: string, price?: number, name?: string, currency?: 'ZOIN' | 'EUR' } | null>(null);
     const [usernameModal, setUsernameModal] = useState(false);
     const [newUsername, setNewUsername] = useState('');
     const [feedbackModal, setFeedbackModal] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const handleBuyClick = (itemId: string, price: number, name: string) => {
+    const handleBuyClick = (itemId: string, price: number, name: string, currency: 'ZOIN' | 'EUR' = 'ZOIN') => {
         if (!user) {
             navigate('/login');
             return;
         }
-        setPurchaseModal({ isOpen: true, itemId, price, name });
+        setPurchaseModal({ isOpen: true, itemId, price, name, currency });
     };
 
     const confirmPurchase = async () => {
@@ -85,10 +81,34 @@ export default function DashboardPage() {
             return;
         }
 
-        await processTransaction(purchaseModal.itemId!, purchaseModal.price!);
+        if (purchaseModal.currency === 'EUR') {
+            await processZoinPurchase(purchaseModal.itemId!);
+        } else {
+            await processTransaction(purchaseModal.itemId!, purchaseModal.payload);
+        }
     };
 
-    const processTransaction = async (itemId: string, price: number, payload?: any) => {
+    const processZoinPurchase = async (packId: string) => {
+        setLoading(true);
+        if (purchaseModal) setPurchaseModal(null);
+
+        try {
+            await apiRequest('/market/purchase-zoins', {
+                method: 'POST',
+                body: JSON.stringify({ packId })
+            });
+
+            setFeedbackModal({ type: 'success', message: '¡Zoins comprados con éxito!' });
+            await refreshUser(); // Update balance
+        } catch (error: any) {
+            console.error(error);
+            setFeedbackModal({ type: 'error', message: error.message || 'Error al realizar la compra' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const processTransaction = async (itemId: string, payload?: any) => {
         setLoading(true);
         if (purchaseModal) setPurchaseModal(null);
         if (usernameModal) setUsernameModal(false);
@@ -111,7 +131,7 @@ export default function DashboardPage() {
 
     const handleUsernameSubmit = () => {
         if (!newUsername.trim()) return;
-        processTransaction('change-username', 5, { newUsername });
+        processTransaction('change-username', { newUsername });
     };
 
     return (
@@ -133,7 +153,7 @@ export default function DashboardPage() {
                     <div className="space-y-4 text-center">
                         <div className="w-16 h-16 bg-[var(--zoin-gold)]/20 rounded-full flex items-center justify-center mx-auto text-3xl">🛒</div>
                         <p className="font-bold text-lg">¿Quieres comprar <span className="text-[var(--text-main)] font-black">{purchaseModal.name}</span>?</p>
-                        <p className="text-sm opacity-80">Coste: <span className="font-bold text-[var(--zoin-gold)]">{purchaseModal.price} Zoins</span></p>
+                        <p className="text-sm opacity-80">Coste: <span className="font-bold text-[var(--zoin-gold)]">{purchaseModal.price} {purchaseModal.currency === 'EUR' ? '€' : 'Zoins'}</span></p>
 
                         <div className="flex gap-3 justify-center mt-6">
                             <button onClick={() => setPurchaseModal(null)} className="px-4 py-2 rounded-xl font-bold uppercase text-xs border border-[var(--text-main)]/20 hover:bg-black/5">Cancelar</button>
@@ -210,7 +230,7 @@ export default function DashboardPage() {
                                 <p className="text-xs text-[var(--blaze-neon)] font-bold">ZONA COMPETITIVA</p>
                             </div>
                         </div>
-                        <button onClick={() => navigate('/admin')} className="text-xs text-[var(--text-muted)] font-bold hover:text-[var(--text-main)] cursor-pointer transition-colors">VER RANKING ABSOLUTO &rarr;</button>
+                        <button onClick={() => navigate('/ranking')} className="text-xs text-[var(--text-muted)] font-bold hover:text-[var(--text-main)] cursor-pointer transition-colors">VER RANKING ABSOLUTO &rarr;</button>
                     </div>
 
                     {/* Single Hero Game Card */}
@@ -239,15 +259,12 @@ export default function DashboardPage() {
                 </section>
 
                 {/* KAI ZONE: Market/VIP */}
-                <section className="relative pt-8">
+                <section id="market" className="relative pt-8">
                     {/* Background decoration for Kai Section */}
                     <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-b from-[var(--kai-green)]/10 to-transparent -z-10 rounded-3xl blur-3xl opacity-50" />
 
                     <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
-                        {/* Kai Floating Illustration (User Provided) */}
-                        <div className="relative w-32 md:w-48 shrink-0 hover-float">
-                            <img src="/kai_v3.png" alt="Kai" className="w-full drop-shadow-[0_10px_30px_rgba(56,142,60,0.4)]" />
-                        </div>
+
 
                         <div className="w-full">
                             <div className="flex items-center justify-between mb-6">
@@ -271,7 +288,7 @@ export default function DashboardPage() {
                                     price={5}
                                     image="/market_username_change.png"
                                     onClick={(id, price, name) => handleBuyClick(id, price, name)}
-                                    disabled={!user}
+                                    status={getMarketItemStatus(5)}
                                 />
                                 <MarketCard
                                     id="pack-20"
@@ -279,7 +296,25 @@ export default function DashboardPage() {
                                     price={0.50}
                                     image="/market_pack_20.png"
                                     onClick={(id, price, name) => handleBuyClick(id, price, name)}
-                                    disabled={!user}
+                                    status={getMarketItemStatus(0.50)}
+                                />
+                                <MarketCard
+                                    id="pack-5-zoins"
+                                    name="5 Zoins"
+                                    price={5}
+                                    currency="EUR"
+                                    image="/market_pack_20.png"
+                                    onClick={(id, price, name, currency) => handleBuyClick(id, price, name, currency)}
+                                    status={getMarketItemStatus(5, 'EUR')}
+                                />
+                                <MarketCard
+                                    id="pack-10-zoins"
+                                    name="10 Zoins"
+                                    price={10}
+                                    currency="EUR"
+                                    image="/market_pack_50.png"
+                                    onClick={(id, price, name, currency) => handleBuyClick(id, price, name, currency)}
+                                    status={getMarketItemStatus(10, 'EUR')}
                                 />
                                 <MarketCard
                                     id="pack-50"
@@ -287,7 +322,7 @@ export default function DashboardPage() {
                                     price={1.00}
                                     image="/market_pack_50.png"
                                     onClick={(id, price, name) => handleBuyClick(id, price, name)}
-                                    disabled={!user}
+                                    status={getMarketItemStatus(1.00)}
                                 />
                             </div>
                         </div>

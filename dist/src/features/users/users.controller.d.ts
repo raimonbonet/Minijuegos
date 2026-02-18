@@ -14,6 +14,7 @@ export declare class UsersController {
         province?: string;
     }): Promise<{
         id: string;
+        createdAt: Date;
         email: string;
         username: string;
         googleId: string | null;
@@ -36,7 +37,6 @@ export declare class UsersController {
         city: string | null;
         province: string | null;
         affiliateName: string | null;
-        createdAt: Date;
         updatedAt: Date;
     }>;
     changePassword(req: any, body: {

@@ -11,4 +11,9 @@ export class MarketController {
     async buyItem(@Request() req, @Body() body: { itemId: string; payload?: any }) {
         return this.marketService.buyItem(req.user.userId, body.itemId, body.payload);
     }
+
+    @Post('purchase-zoins')
+    async purchaseZoins(@Request() req, @Body() body: { packId: string }) {
+        return this.marketService.purchaseZoins(req.user.userId, body.packId);
+    }
 }

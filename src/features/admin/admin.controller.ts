@@ -28,7 +28,11 @@ export class AdminController {
     }
 
     @Get('rankings-list')
-    async getScores(@Query('game') game?: string) {
-        return this.adminService.getAllScores(game);
+    async getScores(
+        @Query() query: { page?: string; limit?: string; game?: string; search?: string },
+    ) {
+        const page = parseInt(query.page || '1');
+        const limit = parseInt(query.limit || '20');
+        return this.adminService.getRankingsList(page, limit, query.game, query.search);
     }
 }

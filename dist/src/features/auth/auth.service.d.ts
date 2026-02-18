@@ -16,6 +16,7 @@ export declare class AuthService {
         message: string;
         user: {
             id: string;
+            createdAt: Date;
             email: string;
             username: string;
             googleId: string | null;
@@ -38,7 +39,6 @@ export declare class AuthService {
             city: string | null;
             province: string | null;
             affiliateName: string | null;
-            createdAt: Date;
             updatedAt: Date;
         };
         isNewUser: boolean;
@@ -47,6 +47,7 @@ export declare class AuthService {
     getFullProfile(userId: string): Promise<{
         hasPassword: boolean;
         id: string;
+        createdAt: Date;
         email: string;
         username: string;
         googleId: string | null;
@@ -68,7 +69,6 @@ export declare class AuthService {
         city: string | null;
         province: string | null;
         affiliateName: string | null;
-        createdAt: Date;
         updatedAt: Date;
     } | null>;
     register(email: string, pass: string, username: string): Promise<{
@@ -87,6 +87,7 @@ export declare class AuthService {
         affiliateName?: string;
     }): Promise<{
         id: string;
+        createdAt: Date;
         email: string;
         username: string;
         googleId: string | null;
@@ -109,11 +110,11 @@ export declare class AuthService {
         city: string | null;
         province: string | null;
         affiliateName: string | null;
-        createdAt: Date;
         updatedAt: Date;
     }>;
     changeUsername(userId: string, newUsername: string): Promise<{
         id: string;
+        createdAt: Date;
         email: string;
         username: string;
         googleId: string | null;
@@ -136,7 +137,6 @@ export declare class AuthService {
         city: string | null;
         province: string | null;
         affiliateName: string | null;
-        createdAt: Date;
         updatedAt: Date;
     }>;
 }

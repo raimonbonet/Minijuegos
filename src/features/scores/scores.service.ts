@@ -94,4 +94,51 @@ export class ScoresService {
             take: 10,
         });
     }
+
+    async getPublicRankings(page: number = 1, limit: number = 20, game?: string, search?: string) {
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        if (game) {
+            where.game = game;
+        }
+        if (search) {
+            where.user = {
+                username: {
+                    contains: search,
+                    mode: 'insensitive',
+                },
+            };
+        }
+
+        const [scores, total] = await Promise.all([
+            this.prisma.score.findMany({
+                where,
+                include: {
+                    user: {
+                        select: {
+                            username: true,
+                            membership: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    amount: 'desc',
+                },
+                skip,
+                take: limit,
+            }),
+            this.prisma.score.count({ where }),
+        ]);
+
+        return {
+            data: scores,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
 }

@@ -21,10 +21,10 @@ async function bootstrap() {
         console.log('Connected to DB.');
 
         console.log('Fetching scores via AdminService (no filter)...');
-        const scores = await adminService.getAllScores();
-        console.log(`AdminService returned ${scores.length} scores.`);
-        if (scores.length > 0) {
-            console.log('Sample:', scores[0]);
+        const response = await adminService.getRankingsList();
+        console.log(`AdminService returned ${response.data.length} scores.`);
+        if (response.data.length > 0) {
+            console.log('Sample:', response.data[0]);
         } else {
             console.log('WARNING: No scores returned by service!');
         }

@@ -47,23 +47,54 @@ export class AdminService {
         });
     }
 
-    async getAllScores(game?: string) {
-        const where = game ? { game } : {};
-        return this.prisma.score.findMany({
-            where,
-            include: {
-                user: {
-                    select: {
-                        email: true,
-                        nombre: true,
-                        apellidos: true,
-                    }
-                }
-            },
+    async getRankingsList(page: number = 1, limit: number = 20, game?: string, search?: string) {
+        console.log('getRankingsList called with:', { page, limit, game, search });
+        const skip = (page - 1) * limit;
 
-            orderBy: { amount: 'desc' },
-            take: 100 // Limit to top 100 for safety, or implement pagination later
-        });
+        const where: any = {};
+        if (game) {
+            where.game = game;
+        }
+        if (search) {
+            where.user = {
+                OR: [
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { username: { contains: search, mode: 'insensitive' } },
+                    { nombre: { contains: search, mode: 'insensitive' } },
+                    { apellidos: { contains: search, mode: 'insensitive' } },
+                ],
+            };
+        }
+
+        const [scores, total] = await Promise.all([
+            this.prisma.score.findMany({
+                where,
+                include: {
+                    user: {
+                        select: {
+                            email: true,
+                            username: true,
+                            nombre: true,
+                            apellidos: true,
+                        }
+                    }
+                },
+                orderBy: { amount: 'desc' },
+                skip,
+                take: limit
+            }),
+            this.prisma.score.count({ where }),
+        ]);
+
+        return {
+            data: scores,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 
     async updateZoins(id: string, amount: number, mode: 'set' | 'add') {

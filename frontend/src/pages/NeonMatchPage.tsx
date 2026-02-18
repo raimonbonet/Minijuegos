@@ -633,8 +633,8 @@ const NeonMatchPage = () => {
                                                     setScore(0);
                                                     setCollectedZoins(0);
                                                     setTimeLeft(60);
+                                                    setTimeLeft(60);
                                                     createBoard();
-                                                    // generateZoinQueue(); // Removed as per new logic
                                                     setIsPlaying(true);
                                                 }}
                                                 disabled={!canPlay}

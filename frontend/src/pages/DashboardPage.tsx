@@ -57,7 +57,7 @@ export default function DashboardPage() {
     };
 
     // Modal States
-    const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, itemId?: string, price?: number, name?: string, currency?: 'ZOIN' | 'EUR' } | null>(null);
+    const [purchaseModal, setPurchaseModal] = useState<{ isOpen: boolean, itemId?: string, price?: number, name?: string, currency?: 'ZOIN' | 'EUR', payload?: any } | null>(null);
     const [usernameModal, setUsernameModal] = useState(false);
     const [newUsername, setNewUsername] = useState('');
     const [feedbackModal, setFeedbackModal] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -222,38 +222,66 @@ export default function DashboardPage() {
                 {/* BLAZE ZONE: Games */}
                 <section className="space-y-6 relative">
                     {/* Section Header */}
-                    <div className="flex items-end justify-between border-b border-[var(--text-main)]/10 pb-4">
-                        <div className="flex items-center gap-3">
-                            <Zap className="w-6 h-6 text-[var(--blaze-neon)]" />
-                            <div>
-                                <h2 className="text-2xl font-black uppercase tracking-tight italic text-[var(--text-main)]">Arena de Juegos</h2>
-                                <p className="text-xs text-[var(--blaze-neon)] font-bold">ZONA COMPETITIVA</p>
-                            </div>
+                    {/* Section Header */}
+                    <div className="flex items-center justify-between bg-wood p-4 rounded-xl shadow-lg mb-6 border-2 border-white/10 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-[var(--blaze-neon)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative z-10 w-full text-center">
+                            <h2 className="text-xl font-black uppercase tracking-tight italic text-white leading-none drop-shadow-md">Arena de Juegos</h2>
                         </div>
-                        <button onClick={() => navigate('/ranking')} className="text-xs text-[var(--text-muted)] font-bold hover:text-[var(--text-main)] cursor-pointer transition-colors">VER RANKING ABSOLUTO &rarr;</button>
+
                     </div>
 
-                    {/* Single Hero Game Card */}
-                    <div
-                        onClick={() => navigate('/game/neon-match')}
-                        className="relative w-full aspect-[16/9] md:aspect-[2.5/1] rounded-3xl overflow-hidden cursor-pointer group shadow-2xl transition-all hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,159,28,0.3)] border-4 border-[var(--blaze-neon)]"
-                    >
-                        {/* Background Image */}
-                        <img
-                            src="/tropical_match3_banner.png"
-                            alt="Neon Match Tropical"
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
+                    {/* Games Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Neon Match Card */}
+                        <div
+                            onClick={() => navigate('/game/neon-match')}
+                            className="relative w-full aspect-[16/9] rounded-3xl overflow-hidden cursor-pointer group shadow-2xl transition-all hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,159,28,0.3)] border-4 border-[var(--blaze-neon)]"
+                        >
+                            <img
+                                src="/tropical_match3_banner.png"
+                                alt="Neon Match Tropical"
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                            <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8">
+                                <button className="bg-white text-[var(--text-main)] px-6 py-2 rounded-xl font-black uppercase tracking-wider hover:scale-105 transition-transform shadow-lg border-b-4 border-gray-300 active:border-b-0 active:translate-y-1 flex items-center gap-2 text-sm">
+                                    <Zap className="w-4 h-4 fill-current text-[var(--zoin-gold)]" />
+                                    JUGAR
+                                </button>
+                            </div>
+                            <div className="absolute top-4 left-4">
+                                <span className="bg-[var(--blaze-neon)] text-white px-3 py-1 rounded-lg font-black text-xs uppercase tracking-widest shadow-lg">Popular</span>
+                            </div>
+                        </div>
 
-                        {/* Subtle Gradient for Button Contrast */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                        {/* Bubble Shooter Card */}
+                        <div
+                            onClick={() => navigate('/game/bubble-shooter')}
+                            className="relative w-full aspect-[16/9] rounded-3xl overflow-hidden cursor-pointer group shadow-2xl transition-all hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] border-4 border-blue-500"
+                        >
+                            <img
+                                src="/bubble_shooter_cover.png"
+                                alt="Bubble Shooter Zoo"
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
 
-                        {/* Content - Just the Button, Bottom Right */}
-                        <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8">
-                            <button className="bg-white text-[var(--text-main)] px-8 py-3 rounded-xl font-black uppercase tracking-wider hover:scale-105 transition-transform shadow-lg border-b-4 border-gray-300 active:border-b-0 active:translate-y-1 flex items-center gap-2">
-                                <Zap className="w-5 h-5 fill-current text-[var(--zoin-gold)]" />
-                                JUGAR AHORA
-                            </button>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+
+                            <div className="absolute bottom-4 left-4 text-white">
+                                <h3 className="text-2xl font-black italic uppercase tracking-tighter drop-shadow-md">Bubble Shooter</h3>
+                                <p className="text-xs font-bold opacity-80">¡Explota burbujas en 3D!</p>
+                            </div>
+
+                            <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8">
+                                <button className="bg-white text-blue-600 px-6 py-2 rounded-xl font-black uppercase tracking-wider hover:scale-105 transition-transform shadow-lg border-b-4 border-gray-300 active:border-b-0 active:translate-y-1 flex items-center gap-2 text-sm">
+                                    <Zap className="w-4 h-4 fill-current text-blue-400" />
+                                    JUGAR
+                                </button>
+                            </div>
+                            <div className="absolute top-4 left-4">
+                                <span className="bg-blue-500 text-white px-3 py-1 rounded-lg font-black text-xs uppercase tracking-widest shadow-lg">Nuevo</span>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -267,18 +295,14 @@ export default function DashboardPage() {
 
 
                         <div className="w-full">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h2 className="text-2xl font-black uppercase tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                                        Kai's Market <span className="text-xs bg-[var(--kai-green)] text-white px-2 py-0.5 rounded font-bold tracking-widest shadow-sm">OPEN</span>
+                            <div className="flex items-center justify-between bg-wood p-4 rounded-xl shadow-lg mb-6 border-2 border-white/10 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-[var(--kai-green)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="relative z-10 w-full text-center">
+                                    <h2 className="text-xl font-black uppercase tracking-tight text-white leading-none drop-shadow-md">
+                                        Kai's Market
                                     </h2>
-                                    <p className="text-sm text-[var(--kai-green)] font-bold">Canjea tus victorias por premios reales.</p>
                                 </div>
-                                {!user && (
-                                    <div className="px-3 py-1 bg-[var(--text-main)] text-[var(--bg-deep)] rounded border-2 border-[var(--text-main)] text-xs font-bold shadow-sm">
-                                        Inicia sesión para comprar
-                                    </div>
-                                )}
+
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">

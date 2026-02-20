@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import DashboardPage from './pages/DashboardPage';
 import NeonMatchPage from './pages/NeonMatchPage';
+import BubbleShooterPage from './pages/BubbleShooterPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
@@ -50,6 +51,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <NeonMatchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/game/bubble-shooter"
+            element={
+              <ProtectedRoute>
+                <BubbleShooterPage />
               </ProtectedRoute>
             }
           />

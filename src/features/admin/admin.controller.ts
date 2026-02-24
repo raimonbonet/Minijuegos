@@ -29,10 +29,12 @@ export class AdminController {
 
     @Get('rankings-list')
     async getScores(
-        @Query() query: { page?: string; limit?: string; game?: string; search?: string },
+        @Query() query: { page?: string; limit?: string; game?: string; search?: string, sortBy?: string, sortDir?: 'asc' | 'desc' },
     ) {
         const page = parseInt(query.page || '1');
         const limit = parseInt(query.limit || '20');
-        return this.adminService.getRankingsList(page, limit, query.game, query.search);
+        const sortBy = query.sortBy || 'amount';
+        const sortDir = query.sortDir || 'desc';
+        return this.adminService.getRankingsList(page, limit, query.game, query.search, sortBy, sortDir);
     }
 }

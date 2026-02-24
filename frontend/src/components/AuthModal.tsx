@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Mail, Lock, User, ArrowRight, X, Loader2 } from 'lucide-react';
-import { apiRequest } from '../lib/api';
+import { apiRequest, API_URL } from '../lib/api';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -54,7 +54,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     };
 
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:3000/auth/google';
+        window.location.href = `${API_URL}/auth/google`;
     };
 
     const toggleMode = () => {

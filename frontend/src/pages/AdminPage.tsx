@@ -135,8 +135,10 @@ export default function AdminPage() {
     const [rankingPage, setRankingPage] = useState(1);
     const [rankingTotalPages, setRankingTotalPages] = useState(1);
     const [rankingTotalItems, setRankingTotalItems] = useState(0);
-    const [selectedGame, setSelectedGame] = useState<string>('neon-match');
+    const [selectedGame, setSelectedGame] = useState<string>('');
     const [rankingSearch, setRankingSearch] = useState('');
+    const [rankingSortField, setRankingSortField] = useState<'amount' | 'createdAt' | 'game' | 'player'>('amount');
+    const [rankingSortDir, setRankingSortDir] = useState<'desc' | 'asc'>('desc');
 
     const [error, setError] = useState<string | null>(null);
 
@@ -164,6 +166,8 @@ export default function AdminPage() {
                 limit: '20',
                 ...(selectedGame && { game: selectedGame }),
                 ...(rankingSearch && { search: rankingSearch }),
+                sortBy: rankingSortField,
+                sortDir: rankingSortDir,
             });
 
             const response = await apiRequest(`/admin/rankings-list?${queryParams}`);
@@ -179,7 +183,6 @@ export default function AdminPage() {
         }
     };
 
-    // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
             if (tab === 'users') {
@@ -189,12 +192,21 @@ export default function AdminPage() {
             }
         }, 500);
         return () => clearTimeout(timer);
-    }, [search, rankingSearch, tab, rankingPage, selectedGame]);
+    }, [search, rankingSearch, tab, rankingPage, selectedGame, rankingSortField, rankingSortDir]);
 
     // Reset pagination when filter changes
     useEffect(() => {
         setRankingPage(1);
-    }, [selectedGame, rankingSearch]);
+    }, [selectedGame, rankingSearch, rankingSortField, rankingSortDir]);
+
+    const handleSort = (field: 'amount' | 'createdAt' | 'game' | 'player') => {
+        if (rankingSortField === field) {
+            setRankingSortDir(prev => prev === 'desc' ? 'asc' : 'desc');
+        } else {
+            setRankingSortField(field);
+            setRankingSortDir('desc');
+        }
+    };
 
 
     const handleUpdateZoins = async (amount: number, mode: 'set' | 'add') => {
@@ -282,7 +294,9 @@ export default function AdminPage() {
                                     onChange={(e) => setSelectedGame(e.target.value)}
                                     className="w-full glass-panel border border-white/20 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-[var(--blaze-neon)]/50 focus:bg-[var(--bg-panel)]/80 transition-all appearance-none cursor-pointer shadow-sm"
                                 >
+                                    <option value="" className="bg-[var(--bg-panel)] text-white">Todos los juegos</option>
                                     <option value="neon-match" className="bg-[var(--bg-panel)] text-white">Neon Match</option>
+                                    <option value="bubble-shooter" className="bg-[var(--bg-panel)] text-white">Bubble Shooter</option>
                                 </select>
                                 <div className="absolute right-4 bottom-3.5 pointer-events-none text-white/50">
                                     ▼
@@ -317,10 +331,30 @@ export default function AdminPage() {
                                         </>
                                     ) : (
                                         <>
-                                            <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider">Juego</th>
-                                            <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider">Jugador</th>
-                                            <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider text-right">Puntuación</th>
-                                            <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider text-right">Fecha</th>
+                                            <th
+                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider cursor-pointer select-none transition-colors"
+                                                onClick={() => handleSort('game')}
+                                            >
+                                                Juego {rankingSortField === 'game' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                            </th>
+                                            <th
+                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider cursor-pointer select-none transition-colors"
+                                                onClick={() => handleSort('player')}
+                                            >
+                                                Jugador {rankingSortField === 'player' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                            </th>
+                                            <th
+                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider text-right cursor-pointer select-none transition-colors"
+                                                onClick={() => handleSort('amount')}
+                                            >
+                                                Puntuación {rankingSortField === 'amount' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                            </th>
+                                            <th
+                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider text-right cursor-pointer select-none transition-colors"
+                                                onClick={() => handleSort('createdAt')}
+                                            >
+                                                Fecha {rankingSortField === 'createdAt' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                            </th>
                                         </>
                                     )}
                                 </tr>

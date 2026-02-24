@@ -24,7 +24,7 @@ export class AdminService {
             }
             : {};
 
-        return this.prisma.user.findMany({
+        const users = await this.prisma.user.findMany({
             where,
             select: {
                 id: true,
@@ -32,12 +32,23 @@ export class AdminService {
                 apellidos: true,
                 email: true,
                 dni: true,
-                Zoins: true,
                 isAdmin: true,
                 isFrozen: true, // Allow admin to see frozen status
+                wallet: {
+                    select: {
+                        balance: true
+                    }
+                }
             },
             orderBy: { createdAt: 'desc' },
         });
+
+        // Map wallet balance to the expected 'Zoins' property for the frontend
+        return users.map(user => ({
+            ...user,
+            Zoins: user.wallet ? Number(user.wallet.balance) : 0,
+            wallet: undefined // Remove wallet object from response to keep it clean
+        }));
     }
 
     async unfreezeUser(id: string) {
@@ -47,8 +58,8 @@ export class AdminService {
         });
     }
 
-    async getRankingsList(page: number = 1, limit: number = 20, game?: string, search?: string) {
-        console.log('getRankingsList called with:', { page, limit, game, search });
+    async getRankingsList(page: number = 1, limit: number = 20, game?: string, search?: string, sortBy: string = 'amount', sortDir: 'asc' | 'desc' = 'desc') {
+        console.log('getRankingsList called with:', { page, limit, game, search, sortBy, sortDir });
         const skip = (page - 1) * limit;
 
         const where: any = {};
@@ -66,6 +77,17 @@ export class AdminService {
             };
         }
 
+        const orderByOptions: any = {};
+        if (sortBy === 'createdAt') {
+            orderByOptions.createdAt = sortDir;
+        } else if (sortBy === 'game') {
+            orderByOptions.game = sortDir;
+        } else if (sortBy === 'player') {
+            orderByOptions.user = { email: sortDir }; // Sort by the related user's email
+        } else {
+            orderByOptions.amount = sortDir;
+        }
+
         const [scores, total] = await Promise.all([
             this.prisma.score.findMany({
                 where,
@@ -79,7 +101,7 @@ export class AdminService {
                         }
                     }
                 },
-                orderBy: { amount: 'desc' },
+                orderBy: orderByOptions,
                 skip,
                 take: limit
             }),

@@ -299,7 +299,7 @@ export default function DashboardPage() {
                                 <div className="absolute inset-0 bg-gradient-to-r from-[var(--kai-green)]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 <div className="relative z-10 w-full text-center">
                                     <h2 className="text-xl font-black uppercase tracking-tight text-white leading-none drop-shadow-md">
-                                        Kai's Market
+                                        Mercado de Kai
                                     </h2>
                                 </div>
 

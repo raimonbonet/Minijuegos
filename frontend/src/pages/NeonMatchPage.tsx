@@ -188,7 +188,7 @@ const NeonMatchPage = () => {
                 const baseColor = candyColors[Math.floor(Math.random() * candyColors.length)];
                 let suffixes = "";
                 if (Math.random() < 0.01) suffixes += "|mul";
-                if (Math.random() < 0.01) suffixes += "|z0.01"; // Restored to 1%
+                if (Math.random() < 0.0035) suffixes += "|z0.01"; // 0.35% chance (was 1%)
 
                 newBoard[col] = {
                     id: nextPieceIdRef.current++,
@@ -243,18 +243,17 @@ const NeonMatchPage = () => {
         }
 
         // 2. Determine Zoin Pool (The "Loot Table")
-        // "no deben salir mas de los que he mencionado" -> This pool is the TOTAL for the game.
+        // Adjusted for an average of ~0.011 Zoins per game
         const zoinValues: number[] = [];
 
-        // Fixed: 1x 0.01
-        zoinValues.push(0.01);
+        // 20% chance of a single 0.01 Zoin at the start (Average: 0.002)
+        if (Math.random() < 0.20) {
+            zoinValues.push(0.01);
+        }
 
-        // Probabilistic:
-        if (Math.random() < 0.50) zoinValues.push(0.01); // 50% chance
-
-        // Rare high-value ones (kept as low legacy chance for now)
-        if (Math.random() < 0.10) zoinValues.push(0.02); // 10% chance
-        if (Math.random() < 0.02) zoinValues.push(0.05); // 2% chance
+        // Extremely rare high-value Zoins (kept for excitement, but minimal impact on average)
+        if (Math.random() < 0.02) zoinValues.push(0.02); // 2% chance
+        if (Math.random() < 0.005) zoinValues.push(0.05); // 0.5% chance
 
         // 3. Inject Zoins into random positions
         const takenIndices = new Set<number>();
@@ -511,7 +510,8 @@ const NeonMatchPage = () => {
                     {/* Board */}
                     <div className={`relative transition-all duration-300 ${isPaused ? 'blur-xl opacity-50' : ''}`}>
                         {/* Blue Glass Board Container */}
-                        <div className="w-[340px] h-[340px] bg-[var(--bg-panel)]/40 rounded-2xl border-2 border-white/20 shadow-2xl backdrop-blur-sm relative overflow-hidden">
+                        {/* 400x400 -> 8 cols of 48px + 16px total padding (8px each side) */}
+                        <div className="w-[400px] h-[400px] bg-[var(--bg-panel)]/40 rounded-2xl border-2 border-white/20 shadow-2xl backdrop-blur-sm relative overflow-hidden">
                             {/* Floating Scores Overlay */}
                             {floatingTexts.map((text) => (
                                 <div
@@ -530,11 +530,10 @@ const NeonMatchPage = () => {
 
                             {currentColorArrangement.map((piece, index) => {
                                 // Calculate Grid Position (Abs)
-                                // 340px container. 320px grid (8x40). 10px padding offset.
                                 const col = index % width;
                                 const row = Math.floor(index / width);
-                                const leftPos = 10 + col * 40;
-                                const topPos = 10 + row * 40;
+                                const leftPos = 8 + col * 48; // 48px blocks, 8px padding
+                                const topPos = 8 + row * 48;
 
                                 // Render empty slots as invisible layout placeholders to maintain VDOM stability
                                 if (piece.val === '') {
@@ -544,23 +543,23 @@ const NeonMatchPage = () => {
                                 return (
                                     <div
                                         key={piece.id}
-                                        className={`absolute w-[40px] h-[40px] rounded-lg cursor-pointer flex items-center justify-center transition-all duration-[120ms] ease-linear`}
+                                        className={`absolute w-[48px] h-[48px] rounded-lg cursor-pointer flex items-center justify-center transition-all duration-[120ms] ease-linear hover:brightness-110`}
                                         style={{
                                             left: leftPos,
                                             top: topPos,
                                             zIndex: selectedPiece === index ? 50 : 10,
                                             backgroundColor: getBaseColor(piece.val),
-                                            boxShadow: getBaseColor(piece.val) ? `0 0 10px ${getBaseColor(piece.val)}40` : 'none',
-                                            border: isMultiplier(piece.val) ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.1)',
-                                            transform: selectedPiece === index ? 'scale(0.9)' : 'scale(1)'
+                                            boxShadow: getBaseColor(piece.val) ? `0 4px 6px rgba(0,0,0,0.5), inset 0 4px 4px rgba(255,255,255,0.6), inset 0 -4px 6px rgba(0,0,0,0.4), 0 0 10px ${getBaseColor(piece.val)}60` : 'none',
+                                            border: isMultiplier(piece.val) ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.2)',
+                                            transform: selectedPiece === index ? 'scale(0.9) translateY(2px)' : 'scale(1)'
                                         }}
                                         onClick={() => handlePieceClick(index)}
                                     >
-                                        <div className="w-full h-full rounded-md bg-gradient-to-br from-white/20 to-transparent flex items-center justify-center relative">
+                                        <div className="w-full h-full rounded-md bg-gradient-to-br from-white/40 to-black/30 flex items-center justify-center relative">
                                             {isMultiplier(piece.val) && <span className="text-xl">🌟</span>}
                                             {getZoinValue(piece.val) > 0 && (
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <span className="text-[10px] font-black text-white bg-black/50 px-1 rounded-full backdrop-blur-sm border border-yellow-400/50">
+                                                    <span className="text-[12px] font-black text-white bg-black/50 px-1 rounded-full backdrop-blur-sm border border-yellow-400/50">
                                                         z{getZoinValue(piece.val)}
                                                     </span>
                                                 </div>

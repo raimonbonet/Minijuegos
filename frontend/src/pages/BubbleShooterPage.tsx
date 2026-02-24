@@ -6,8 +6,8 @@ import Leaderboard from '../components/Leaderboard';
 
 // --- Constants & Types ---
 
-const COLS = 13; // Grid width (Reduced from 15 per user req)
-const BUBBLE_RADIUS = 18; // Increased size (was 16)
+const COLS = 13;
+const BUBBLE_RADIUS = 18;
 const BUBBLE_DIAMETER = BUBBLE_RADIUS * 2;
 
 // Colors for 3D bubbles (base + highlight + shadow)
@@ -442,6 +442,7 @@ const BubbleShooterPage = () => {
 
             // 2. Schedule removal
             setTimeout(() => {
+                const currentPhase = gridPhaseRef.current;
                 let remainingBubbles = bubblesRef.current.filter(b => !matchIds.has(b.id));
 
                 // Handle Floating Clusters (Disconnected from ceiling)
@@ -455,7 +456,7 @@ const BubbleShooterPage = () => {
                 let gHead = 0;
                 while (gHead < groundQueue.length) {
                     const curr = groundQueue[gHead++];
-                    const neighbors = getBubbleNeighbors(curr, remainingBubbles, phase);
+                    const neighbors = getBubbleNeighbors(curr, remainingBubbles, currentPhase);
                     for (const n of neighbors) {
                         if (!grounded.has(n.id)) {
                             grounded.add(n.id);

@@ -26,7 +26,7 @@ const MembershipIcon = ({ type }: { type: Score['user']['membership'] }) => {
     }
 };
 
-export default function Leaderboard({ game = 'neon-match' }: { game?: string }) {
+export default function Leaderboard({ game = 'bloques-tropicales' }: { game?: string }) {
     const [scores, setScores] = useState<Score[]>([]);
     const [loading, setLoading] = useState(true);
 

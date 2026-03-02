@@ -1,5 +1,5 @@
 
-import { Controller, Get, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, Query, UseGuards, Post, Delete } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/auth.guards';
 import { AdminGuard } from '../../shared/guards/admin.guard';
@@ -36,5 +36,20 @@ export class AdminController {
         const sortBy = query.sortBy || 'amount';
         const sortDir = query.sortDir || 'desc';
         return this.adminService.getRankingsList(page, limit, query.game, query.search, sortBy, sortDir);
+    }
+
+    @Get('beta-testers')
+    async getBetaTesters() {
+        return this.adminService.getBetaTesters();
+    }
+
+    @Post('beta-testers')
+    async addBetaTester(@Body() body: { email: string }) {
+        return this.adminService.addBetaTester(body.email);
+    }
+
+    @Delete('beta-testers/:id')
+    async removeBetaTester(@Param('id') id: string) {
+        return this.adminService.removeBetaTester(id);
     }
 }

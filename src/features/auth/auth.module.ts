@@ -10,12 +10,14 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { WalletModule } from '../wallet/wallet.module';
 import { EmailModule } from '../../shared/email/email.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [
         UsersModule,
         WalletModule,
         EmailModule,
+        NotificationsModule,
         PassportModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],

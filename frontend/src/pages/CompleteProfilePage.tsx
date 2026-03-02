@@ -8,7 +8,8 @@ import {
     ArrowRight,
     Gamepad2,
     CheckCircle,
-    AtSign
+    AtSign,
+    Info
 } from 'lucide-react';
 
 export default function CompleteProfilePage() {
@@ -128,155 +129,164 @@ export default function CompleteProfilePage() {
     };
 
     return (
-        <div className="w-full max-w-lg px-4 animate-in">
-            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/20">
-                {/* Header */}
-                <div className="p-8 text-center bg-white/5 border-b border-white/10">
-                    <Gamepad2 className="w-12 h-12 mx-auto mb-4 text-[var(--blaze-neon)] drop-shadow-lg" />
-                    <h1 className="text-3xl font-black tracking-tight text-white uppercase italic drop-shadow-md">Completar Perfil</h1>
-                    <p className="text-white/70 mt-2 font-medium">
-                        Solo unos datos más para terminar el registro
-                    </p>
-                </div>
-
-                {/* Message */}
-                {message.text && (
-                    <div className={`px-8 py-3 text-sm text-center font-bold ${message.type === 'error' ? 'bg-red-500/10 text-red-300' : 'bg-green-500/10 text-green-300'}`}>
-                        {message.text}
+        <div className="w-full min-h-[calc(100vh-80px)] flex items-center justify-center p-4">
+            <div className="w-full max-w-lg animate-in fade-in zoom-in-95 duration-200">
+                <div className="bg-[var(--bg-deep)] rounded-3xl overflow-hidden shadow-2xl border-4 border-wood">
+                    {/* Header */}
+                    <div className="p-8 pb-6 text-center bg-wood border-b-4 border-black/10 relative">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                        <Gamepad2 className="w-12 h-12 mx-auto mb-4 text-[var(--zoin-gold)] drop-shadow-lg relative z-10" />
+                        <h1 className="text-3xl font-black tracking-tight text-white uppercase italic drop-shadow-md relative z-10">Completar Perfil</h1>
+                        <p className="text-white/80 mt-2 font-medium relative z-10">
+                            Solo unos datos más para terminar
+                        </p>
                     </div>
-                )}
 
-                {/* Welcome Message */}
-                {showWelcome ? (
-                    <div className="p-8 text-center space-y-6 animate-in">
-                        <div className="flex justify-center">
-                            <CheckCircle className="w-20 h-20 text-[var(--kai-green)] animate-pulse" />
+                    {/* Message */}
+                    {message.text && (
+                        <div className={`px-8 py-3 text-sm text-center font-bold ${message.type === 'error' ? 'bg-red-500/10 text-red-300' : 'bg-green-500/10 text-green-300'}`}>
+                            {message.text}
                         </div>
-                        <div className="space-y-2">
-                            <h2 className="text-3xl font-black text-white">
-                                ¡Bienvenido, {userName}! 🎉
-                            </h2>
-                            <p className="text-white/80 text-lg font-medium">
-                                Tu perfil ha sido completado exitosamente
-                            </p>
+                    )}
+
+                    {/* Welcome Message */}
+                    {showWelcome ? (
+                        <div className="p-8 text-center space-y-6 animate-in">
+                            <div className="flex justify-center">
+                                <CheckCircle className="w-20 h-20 text-[var(--kai-green)] animate-pulse" />
+                            </div>
+                            <div className="space-y-2">
+                                <h2 className="text-3xl font-black text-[var(--text-main)]">
+                                    ¡Bienvenido, {userName}! 🎉
+                                </h2>
+                                <p className="text-[var(--text-secondary)] text-lg font-medium">
+                                    Tu perfil ha sido completado exitosamente
+                                </p>
+                            </div>
+                            <div className="pt-4">
+                                <p className="text-sm text-[var(--text-secondary)] mb-4">
+                                    Serás redirigido al dashboard en unos segundos...
+                                </p>
+                                <button
+                                    onClick={() => navigate('/')}
+                                    className="btn-wood w-full text-white font-black uppercase py-4 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                                >
+                                    Ir al Dashboard ahora
+                                    <ArrowRight className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
-                        <div className="pt-4">
-                            <p className="text-sm text-white/60 mb-4">
-                                Serás redirigido al dashboard en unos segundos...
-                            </p>
-                            <button
-                                onClick={() => navigate('/')}
-                                className="btn-wood w-full text-white font-black uppercase py-4 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-                            >
-                                Ir al Dashboard ahora
-                                <ArrowRight className="w-5 h-5" />
+                    ) : (
+                        /* Form */
+                        <form onSubmit={handleSubmit} className="p-8 space-y-5">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
+                                    <AtSign className="w-3 h-3" />Nombre de Usuario
+                                </label>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    required
+                                    className="w-full bg-white border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                                    placeholder="Tu alias único..."
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                />
+                                <p className="text-[10px] text-[var(--text-muted)] italic">Este es el nombre que verán los demás jugadores.</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
+                                        <UserIcon className="w-3 h-3" /> Nombre
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="nombre"
+                                        required
+                                        className="w-full bg-white border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                                        placeholder="Ej: Juan"
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
+                                        Apellidos
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="apellidos"
+                                        required
+                                        className="w-full bg-white border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                                        placeholder="Ej: Pérez"
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
+                                        <CreditCard className="w-3 h-3" /> DNI
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="dni"
+                                        required
+                                        className="w-full bg-white border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                                        placeholder="12345678X"
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2">
+                                        <Calendar className="w-3 h-3" /> F. Nacimiento
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="fechaNacimiento"
+                                        required
+                                        className="w-full bg-white border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider">Sexo</label>
+                                <select name="sexo" className="w-full bg-white border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm" onChange={handleChange} value={formData.sexo}>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                    <option value="O">Otro</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2 relative">
+                                <label className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5 w-fit">
+                                    Nombre de Afiliado (Opcional)
+                                    <div className="relative group flex items-center justify-center cursor-help">
+                                        <Info className="w-4 h-4 text-[var(--kai-green)]" />
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20 shadow-xl border border-white/10 text-center pointer-events-none before:content-[''] before:absolute before:-bottom-1.5 before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-gray-900 before:border-x-transparent before:border-b-transparent">
+                                            Introduce el nombre de usuario de quien te haya recomendado Zooplay y se le regalarán <strong className="text-[var(--zoin-gold)]">10 partidas gratuitas</strong>.
+                                        </div>
+                                    </div>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="affiliateName"
+                                    className="w-full bg-white border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                                    placeholder="Si vienes recomendado"
+                                    onChange={handleChange}
+                                />
+                            </div>
+
+                            <button type="submit" disabled={loading} className="btn-wood w-full text-white font-black uppercase py-4 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {loading ? 'Guardando...' : 'Finalizar Registro'}
+                                {!loading && <ArrowRight className="w-5 h-5" />}
                             </button>
-                        </div>
-                    </div>
-                ) : (
-                    /* Form */
-                    <form onSubmit={handleSubmit} className="p-8 space-y-5">
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-white/80 uppercase tracking-wider flex items-center gap-2">
-                                <AtSign className="w-3 h-3" /> Alias de Operador (Nombre de Usuario)
-                            </label>
-                            <input
-                                type="text"
-                                name="username"
-                                required
-                                className="w-full bg-[var(--bg-deep)] border border-white/10 rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--blaze-neon)] transition-all font-medium shadow-inner"
-                                placeholder="Tu alias unico..."
-                                value={formData.username}
-                                onChange={handleChange}
-                            />
-                            <p className="text-[10px] text-white/50 italic">Este es el nombre que verán los demás jugadores.</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-white/80 uppercase tracking-wider flex items-center gap-2">
-                                    <UserIcon className="w-3 h-3" /> Nombre
-                                </label>
-                                <input
-                                    type="text"
-                                    name="nombre"
-                                    required
-                                    className="w-full bg-[var(--bg-deep)] border border-white/10 rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--blaze-neon)] transition-all font-medium shadow-inner"
-                                    placeholder="Ej: Juan"
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-white/80 uppercase tracking-wider flex items-center gap-2">
-                                    Apellidos
-                                </label>
-                                <input
-                                    type="text"
-                                    name="apellidos"
-                                    required
-                                    className="w-full bg-[var(--bg-deep)] border border-white/10 rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--blaze-neon)] transition-all font-medium shadow-inner"
-                                    placeholder="Ej: Pérez"
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-white/80 uppercase tracking-wider flex items-center gap-2">
-                                    <CreditCard className="w-3 h-3" /> DNI
-                                </label>
-                                <input
-                                    type="text"
-                                    name="dni"
-                                    required
-                                    className="w-full bg-[var(--bg-deep)] border border-white/10 rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--blaze-neon)] transition-all font-medium shadow-inner"
-                                    placeholder="12345678X"
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-black text-white/80 uppercase tracking-wider flex items-center gap-2">
-                                    <Calendar className="w-3 h-3" /> F. Nacimiento
-                                </label>
-                                <input
-                                    type="date"
-                                    name="fechaNacimiento"
-                                    required
-                                    className="w-full bg-[var(--bg-deep)] border border-white/10 rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--blaze-neon)] transition-all font-medium shadow-inner"
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-white/80 uppercase tracking-wider">Sexo</label>
-                            <select name="sexo" className="w-full bg-[var(--bg-deep)] border border-white/10 rounded-xl px-4 py-3 text-[var(--text-main)] focus:outline-none focus:border-[var(--blaze-neon)] transition-all font-medium shadow-inner" onChange={handleChange} value={formData.sexo}>
-                                <option value="M">Masculino</option>
-                                <option value="F">Femenino</option>
-                                <option value="O">Otro</option>
-                            </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-white/80 uppercase tracking-wider">
-                                Nombre de Afiliado (Opcional)
-                            </label>
-                            <input
-                                type="text"
-                                name="affiliateName"
-                                className="w-full bg-[var(--bg-deep)] border border-white/10 rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)]/50 focus:outline-none focus:border-[var(--blaze-neon)] transition-all font-medium shadow-inner"
-                                placeholder="Si vienes recomendado"
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        <button type="submit" disabled={loading} className="btn-wood w-full text-white font-black uppercase py-4 rounded-xl shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
-                            {loading ? 'Guardando...' : 'Finalizar Registro'}
-                            {!loading && <ArrowRight className="w-5 h-5" />}
-                        </button>
-                    </form>
-                )}
+                        </form>
+                    )}
+                </div>
             </div>
         </div>
     );

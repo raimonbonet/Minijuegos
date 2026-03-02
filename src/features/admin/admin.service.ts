@@ -145,4 +145,25 @@ export class AdminService {
             );
         }
     }
+
+    async getBetaTesters() {
+        return this.prisma.betaTester.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+
+    async addBetaTester(email: string) {
+        return this.prisma.betaTester.create({
+            data: { email }
+        }).catch(e => {
+            if (e.code === 'P2002') throw new Error('El email ya está registrado como beta tester');
+            throw e;
+        });
+    }
+
+    async removeBetaTester(id: string) {
+        return this.prisma.betaTester.delete({
+            where: { id }
+        });
+    }
 }

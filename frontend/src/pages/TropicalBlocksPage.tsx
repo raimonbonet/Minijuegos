@@ -28,7 +28,7 @@ interface Piece {
     isMatched?: boolean;
 }
 
-const NeonMatchPage = () => {
+const TropicalBlocksPage = () => {
     const navigate = useNavigate();
     const { user, refreshUser } = useOutletContext<any>();
 
@@ -50,7 +50,7 @@ const NeonMatchPage = () => {
     // Derived State from Context
     const membership = user?.membership || 'FREE';
 
-    const getLimit = (mem: string) => {
+    /* const getLimit = (mem: string) => {
         switch (mem) {
             case 'FREE': return 3;
             case 'PALMERA': return 8;
@@ -58,9 +58,9 @@ const NeonMatchPage = () => {
             case 'PERLA': return 25;
             default: return 3;
         }
-    };
+    }; */
 
-    const limit = getLimit(membership);
+    // const limit = getLimit(membership); // Not used
     const dailyGamesLeft = typeof user?.dailyGamesLeft === 'number' ? user.dailyGamesLeft : 0;
     const extraGames = typeof user?.extraGames === 'number' ? user.extraGames : 0;
     const canPlay = dailyGamesLeft > 0 || extraGames > 0;
@@ -367,7 +367,7 @@ const NeonMatchPage = () => {
         try {
             await apiRequest('/scores', {
                 method: 'POST',
-                body: JSON.stringify({ amount: score, game: 'neon-match', zoins: collectedZoins })
+                body: JSON.stringify({ amount: score, game: 'bloques-tropicales', zoins: collectedZoins })
             });
             // Update global limits immediately
             if (refreshUser) await refreshUser();
@@ -470,7 +470,7 @@ const NeonMatchPage = () => {
                             <ArrowLeft className="w-6 h-6" />
                         </button>
                         <h1 className="text-3xl font-black italic uppercase tracking-tighter text-[var(--text-main)] drop-shadow-md">
-                            Neon Match
+                            Bloques Tropicales
                         </h1>
                         <div className="w-10" />
                     </div>
@@ -708,4 +708,4 @@ const NeonMatchPage = () => {
     );
 };
 
-export default NeonMatchPage;
+export default TropicalBlocksPage;

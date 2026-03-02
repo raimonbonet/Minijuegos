@@ -8,7 +8,11 @@ datasource db {
 }
 
         
-
+model BetaTester {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
 model User {
   id              String   @id @default(uuid())
   email           String   @unique
@@ -38,13 +42,14 @@ model User {
 
   wallet          Wallet?
   scores          Score[]
+  notifications   Notification[]
 }
 
 model Score {
   id        String   @id @default(uuid())
   amount    Int
   zoinsEarned Float    @default(0)
-  game      String   @default("neon-match")
+  game      String   @default("bloques-tropicales")
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
@@ -91,4 +96,16 @@ enum MembershipType {
   PALMERA
   CORAL
   PERLA
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO") // Types: INFO, UPDATE, PROMO
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

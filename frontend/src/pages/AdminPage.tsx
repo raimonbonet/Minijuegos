@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Edit, X, User as UserIcon, LogOut, Shield } from 'lucide-react';
+import { Search, Edit, X, User as UserIcon, LogOut, Shield, Mail, Send, Loader2 } from 'lucide-react';
 import { apiRequest } from '../lib/api';
 
 // --- Types ---
@@ -14,6 +14,12 @@ interface User {
     Zoins: string | number;
     isAdmin: boolean;
     isFrozen: boolean; // Added isFrozen
+}
+
+interface BetaTester {
+    id: string;
+    email: string;
+    createdAt: string;
 }
 
 interface Score {
@@ -124,9 +130,14 @@ const EditBalanceModal = ({ user, onClose, onSave }: { user: User, onClose: () =
 
 export default function AdminPage() {
     const navigate = useNavigate();
-    const [tab, setTab] = useState<'users' | 'scores'>('users');
+    const [tab, setTab] = useState<'users' | 'scores' | 'comunicados' | 'betatesters'>('users');
+    const [broadcastTitle, setBroadcastTitle] = useState('');
+    const [broadcastMessage, setBroadcastMessage] = useState('');
+    const [broadcasting, setBroadcasting] = useState(false);
     const [users, setUsers] = useState<User[]>([]);
     const [scores, setScores] = useState<Score[]>([]);
+    const [betaTesters, setBetaTesters] = useState<BetaTester[]>([]);
+    const [newBetaTesterEmail, setNewBetaTesterEmail] = useState('');
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -183,12 +194,29 @@ export default function AdminPage() {
         }
     };
 
+    const fetchBetaTesters = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await apiRequest('/admin/beta-testers');
+            setBetaTesters(Array.isArray(data) ? data : []);
+        } catch (e) {
+            console.error(e);
+            setError((e as Error).message);
+            setBetaTesters([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         const timer = setTimeout(() => {
             if (tab === 'users') {
                 fetchUsers();
-            } else {
+            } else if (tab === 'scores') {
                 fetchScores();
+            } else if (tab === 'betatesters') {
+                fetchBetaTesters();
             }
         }, 500);
         return () => clearTimeout(timer);
@@ -234,6 +262,51 @@ export default function AdminPage() {
         }
     };
 
+    const handleBroadcast = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!broadcastTitle || !broadcastMessage) return;
+        setBroadcasting(true);
+        try {
+            await apiRequest('/admin/notifications/broadcast', {
+                method: 'POST',
+                body: JSON.stringify({ title: broadcastTitle, message: broadcastMessage })
+            });
+            alert('Mensaje enviado a todos los usuarios correctamente.');
+            setBroadcastTitle('');
+            setBroadcastMessage('');
+        } catch (e) {
+            alert('Error al enviar comunicado: ' + (e as Error).message);
+        } finally {
+            setBroadcasting(false);
+        }
+    };
+
+    const handleAddBetaTester = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newBetaTesterEmail) return;
+        try {
+            await apiRequest('/admin/beta-testers', {
+                method: 'POST',
+                body: JSON.stringify({ email: newBetaTesterEmail })
+            });
+            setNewBetaTesterEmail('');
+            fetchBetaTesters();
+            alert('Añadido correctamente');
+        } catch (e) {
+            alert('Error: ' + (e as Error).message);
+        }
+    };
+
+    const handleRemoveBetaTester = async (id: string) => {
+        if (!confirm('¿Eliminar beta tester?')) return;
+        try {
+            await apiRequest(`/admin/beta-testers/${id}`, { method: 'DELETE' });
+            fetchBetaTesters();
+        } catch (e) {
+            alert('Error: ' + (e as Error).message);
+        }
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/login');
@@ -249,10 +322,10 @@ export default function AdminPage() {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div>
                             <h1 className="text-3xl font-black text-[var(--text-main)] uppercase italic tracking-tighter drop-shadow-md">
-                                {tab === 'users' ? 'Gestión de Usuarios' : 'Rankings Globales'}
+                                {tab === 'users' ? 'Gestión de Usuarios' : tab === 'scores' ? 'Rankings Globales' : tab === 'comunicados' ? 'Comunicados' : 'Beta Testers'}
                             </h1>
                             <p className="text-[var(--text-main)]/80 text-sm font-medium">
-                                {tab === 'users' ? 'Administra cuentas, saldos y bloqueos.' : 'Supervisa puntuaciones para detectar fraudes.'}
+                                {tab === 'users' ? 'Administra cuentas, saldos y bloqueos.' : tab === 'scores' ? 'Supervisa puntuaciones para detectar fraudes.' : tab === 'comunicados' ? 'Envía notificaciones a todos los usuarios.' : 'Gestiona los correos permitidos en fase beta.'}
                             </p>
                         </div>
 
@@ -268,6 +341,18 @@ export default function AdminPage() {
                                 className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${tab === 'scores' ? 'bg-[var(--blaze-neon)] text-white shadow-md' : 'text-white/60 hover:text-white'}`}
                             >
                                 Rankings
+                            </button>
+                            <button
+                                onClick={() => setTab('comunicados')}
+                                className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${tab === 'comunicados' ? 'bg-[var(--blaze-neon)] text-white shadow-md' : 'text-white/60 hover:text-white'}`}
+                            >
+                                <Mail className="w-4 h-4" /> Comunicados
+                            </button>
+                            <button
+                                onClick={() => setTab('betatesters')}
+                                className={`px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${tab === 'betatesters' ? 'bg-[var(--blaze-neon)] text-white shadow-md' : 'text-white/60 hover:text-white'}`}
+                            >
+                                Beta Testers
                             </button>
                         </div>
                     </div>
@@ -295,7 +380,7 @@ export default function AdminPage() {
                                     className="w-full glass-panel border border-white/20 rounded-xl px-4 py-3 text-white font-bold focus:outline-none focus:border-[var(--blaze-neon)]/50 focus:bg-[var(--bg-panel)]/80 transition-all appearance-none cursor-pointer shadow-sm"
                                 >
                                     <option value="" className="bg-[var(--bg-panel)] text-white">Todos los juegos</option>
-                                    <option value="neon-match" className="bg-[var(--bg-panel)] text-white">Neon Match</option>
+                                    <option value="bloques-tropicales" className="bg-[var(--bg-panel)] text-white">Bloques Tropicales</option>
                                     <option value="bubble-shooter" className="bg-[var(--bg-panel)] text-white">Bubble Shooter</option>
                                 </select>
                                 <div className="absolute right-4 bottom-3.5 pointer-events-none text-white/50">
@@ -317,155 +402,243 @@ export default function AdminPage() {
                     )}
                 </div>
 
-                {/* Content */}
-                <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-white/5 border-b border-white/10">
-                                    {tab === 'users' ? (
-                                        <>
-                                            <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider">Usuario</th>
-                                            <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider text-right">Saldo (Zoins)</th>
-                                            <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider text-right">Acciones</th>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <th
-                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider cursor-pointer select-none transition-colors"
-                                                onClick={() => handleSort('game')}
-                                            >
-                                                Juego {rankingSortField === 'game' && (rankingSortDir === 'desc' ? '↓' : '↑')}
-                                            </th>
-                                            <th
-                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider cursor-pointer select-none transition-colors"
-                                                onClick={() => handleSort('player')}
-                                            >
-                                                Jugador {rankingSortField === 'player' && (rankingSortDir === 'desc' ? '↓' : '↑')}
-                                            </th>
-                                            <th
-                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider text-right cursor-pointer select-none transition-colors"
-                                                onClick={() => handleSort('amount')}
-                                            >
-                                                Puntuación {rankingSortField === 'amount' && (rankingSortDir === 'desc' ? '↓' : '↑')}
-                                            </th>
-                                            <th
-                                                className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider text-right cursor-pointer select-none transition-colors"
-                                                onClick={() => handleSort('createdAt')}
-                                            >
-                                                Fecha {rankingSortField === 'createdAt' && (rankingSortDir === 'desc' ? '↓' : '↑')}
-                                            </th>
-                                        </>
-                                    )}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/10">
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan={4} className="p-8 text-center text-white/60 italic">Cargando...</td>
-                                    </tr>
-                                ) : error ? (
-                                    <tr>
-                                        <td colSpan={4} className="p-8 text-center text-red-400 font-bold bg-red-500/10">
-                                            Error: {error}
-                                        </td>
-                                    </tr>
-                                ) : (tab === 'users' ? users : scores).length === 0 ? (
-                                    <tr>
-                                        <td colSpan={4} className="p-8 text-center text-white/60 italic">No se encontraron resultados</td>
-                                    </tr>
-                                ) : (
-                                    tab === 'users' ? (
-                                        (users as User[]).map(user => (
-                                            <tr key={user.id} className={`hover:bg-white/10 transition-colors group ${user.isFrozen ? 'bg-blue-500/10 hover:bg-blue-500/20' : ''}`}>
-                                                <td className="p-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${user.isAdmin ? 'bg-red-500/20 text-red-300' : user.isFrozen ? 'bg-blue-500/20 text-blue-300' : 'bg-white/10 text-white/60'}`}>
-                                                            {user.isAdmin ? <Shield className="w-4 h-4" /> : user.isFrozen ? <span className="text-lg">❄️</span> : <UserIcon className="w-4 h-4" />}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-bold text-white text-sm flex items-center gap-2">
-                                                                {user.nombre ? `${user.nombre} ${user.apellidos || ''}` : 'Sin nombre'}
-                                                                {user.isFrozen && <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded uppercase font-black">Congelado</span>}
-                                                            </div>
-                                                            <div className="text-xs text-white/60 font-mono">{user.email}</div>
-                                                            {user.dni && <div className="text-[10px] text-white/40 uppercase tracking-wide mt-0.5">DNI: {user.dni}</div>}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <span className="font-mono font-bold text-[var(--zoin-gold)] text-lg tracking-tight">
-                                                        {Number(user.Zoins).toFixed(2)}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => setEditingUser(user)}
-                                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-xs font-bold text-white transition-all hover:scale-105"
-                                                        >
-                                                            <Edit className="w-3 h-3" />
-                                                            Editar
-                                                        </button>
-                                                        {user.isFrozen && (
-                                                            <button
-                                                                onClick={() => handleUnfreeze(user.id)}
-                                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-lg text-xs font-bold text-blue-300 transition-all hover:scale-105"
-                                                            >
-                                                                🔓 Descongelar
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        (scores as Score[]).map(score => (
-                                            <tr key={score.id} className="hover:bg-white/10 transition-colors">
-                                                <td className="p-4 text-sm font-bold text-white uppercase tracking-wider">{score.game}</td>
-                                                <td className="p-4">
-                                                    <div className="text-sm font-bold text-white">{score.user.email}</div>
-                                                    <div className="text-xs text-white/60">{score.user.nombre || 'Anon'} {score.user.apellidos || ''}</div>
-                                                </td>
-                                                <td className="p-4 text-right font-mono font-bold text-white text-lg">
-                                                    {score.amount}
-                                                </td>
-                                                <td className="p-4 text-right text-xs text-white/60 font-mono">
-                                                    {new Date(score.createdAt).toLocaleString()}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )
-                                )}
-                            </tbody>
-                        </table>
+                {tab === 'betatesters' && (
+                    <div className="glass-panel rounded-2xl p-6 shadow-2xl border border-white/10 mb-8 max-w-2xl">
+                        <h2 className="text-xl font-black text-white uppercase italic mb-4">Añadir Beta Tester</h2>
+                        <form onSubmit={handleAddBetaTester} className="flex gap-4">
+                            <input
+                                type="email"
+                                required
+                                value={newBetaTesterEmail}
+                                onChange={(e) => setNewBetaTesterEmail(e.target.value)}
+                                placeholder="Añadir nuevo correo (ej: tester@gmail.com)"
+                                className="flex-1 bg-[var(--bg-panel)]/50 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-[var(--blaze-neon)]/50 transition-all font-bold"
+                            />
+                            <button
+                                type="submit"
+                                className="btn-wood px-6 py-3 rounded-xl font-black uppercase tracking-wider text-white shadow-lg flex justify-center items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all"
+                            >
+                                <UserIcon className="w-4 h-4" /> Añadir
+                            </button>
+                        </form>
                     </div>
+                )}
 
-                    {/* Pagination Controls (Only for Scores tab) */}
-                    {tab === 'scores' && (
-                        <div className="flex items-center justify-between px-6 py-4 bg-black/10 border-t border-white/5">
-                            <div className="text-xs font-bold text-white/60">
-                                Mostrando {((rankingPage - 1) * 20) + 1}-{Math.min(rankingPage * 20, rankingTotalItems)} de {rankingTotalItems}
-                            </div>
-                            <div className="flex gap-2">
+                {
+                    tab === 'comunicados' ? (
+                        <div className="glass-panel rounded-2xl p-8 shadow-2xl border border-white/10 max-w-2xl mx-auto">
+                            <h2 className="text-xl font-black text-white uppercase italic mb-6">Nuevo Mensaje Global</h2>
+                            <form onSubmit={handleBroadcast} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider block">Título del Mensaje</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={broadcastTitle}
+                                        onChange={(e) => setBroadcastTitle(e.target.value)}
+                                        placeholder="Ej: Nueva Temporada Disponible"
+                                        className="w-full bg-[var(--bg-panel)]/50 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-[var(--blaze-neon)]/50 transition-all font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-white/70 uppercase tracking-wider block">Contenido</label>
+                                    <textarea
+                                        required
+                                        value={broadcastMessage}
+                                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                                        placeholder="Escribe aquí las novedades..."
+                                        rows={5}
+                                        className="w-full bg-[var(--bg-panel)]/50 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-[var(--blaze-neon)]/50 transition-all resize-y"
+                                    ></textarea>
+                                </div>
                                 <button
-                                    onClick={() => setRankingPage(p => Math.max(1, p - 1))}
-                                    disabled={rankingPage === 1 || loading}
-                                    className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50 text-xs font-bold text-white transition-all"
+                                    type="submit"
+                                    disabled={broadcasting}
+                                    className="w-full btn-wood py-3 rounded-xl font-black uppercase tracking-wider text-white shadow-lg flex justify-center items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                                 >
-                                    Anterior
+                                    {broadcasting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-5 h-5" /> Enviar a Todos</>}
                                 </button>
-                                <button
-                                    onClick={() => setRankingPage(p => Math.min(rankingTotalPages, p + 1))}
-                                    disabled={rankingPage === rankingTotalPages || loading}
-                                    className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50 text-xs font-bold text-white transition-all"
-                                >
-                                    Siguiente
-                                </button>
+                            </form>
+                        </div>
+                    ) : (
+                        <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-white/5 border-b border-white/10">
+                                            {tab === 'users' ? (
+                                                <>
+                                                    <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider">Usuario</th>
+                                                    <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider text-right">Saldo (Zoins)</th>
+                                                    <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider text-right">Acciones</th>
+                                                </>
+                                            ) : tab === 'betatesters' ? (
+                                                <>
+                                                    <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider">Email del Beta Tester</th>
+                                                    <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider">Fecha de Creación</th>
+                                                    <th className="p-4 text-xs font-black text-white/60 uppercase tracking-wider text-right">Acciones</th>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <th
+                                                        className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider cursor-pointer select-none transition-colors"
+                                                        onClick={() => handleSort('game')}
+                                                    >
+                                                        Juego {rankingSortField === 'game' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                                    </th>
+                                                    <th
+                                                        className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider cursor-pointer select-none transition-colors"
+                                                        onClick={() => handleSort('player')}
+                                                    >
+                                                        Jugador {rankingSortField === 'player' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                                    </th>
+                                                    <th
+                                                        className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider text-right cursor-pointer select-none transition-colors"
+                                                        onClick={() => handleSort('amount')}
+                                                    >
+                                                        Puntuación {rankingSortField === 'amount' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                                    </th>
+                                                    <th
+                                                        className="p-4 text-xs font-black text-white/60 hover:text-white uppercase tracking-wider text-right cursor-pointer select-none transition-colors"
+                                                        onClick={() => handleSort('createdAt')}
+                                                    >
+                                                        Fecha {rankingSortField === 'createdAt' && (rankingSortDir === 'desc' ? '↓' : '↑')}
+                                                    </th>
+                                                </>
+                                            )}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/10">
+                                        {loading ? (
+                                            <tr>
+                                                <td colSpan={4} className="p-8 text-center text-white/60 italic">Cargando...</td>
+                                            </tr>
+                                        ) : error ? (
+                                            <tr>
+                                                <td colSpan={4} className="p-8 text-center text-red-400 font-bold bg-red-500/10">
+                                                    Error: {error}
+                                                </td>
+                                            </tr>
+                                        ) : (tab === 'users' ? users : tab === 'scores' ? scores : betaTesters).length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="p-8 text-center text-white/60 italic">No se encontraron resultados</td>
+                                            </tr>
+                                        ) : (
+                                            tab === 'betatesters' ? (
+                                                (betaTesters as BetaTester[]).map(tester => (
+                                                    <tr key={tester.id} className="hover:bg-white/10 transition-colors group">
+                                                        <td className="p-4">
+                                                            <div className="font-bold text-white text-sm flex items-center gap-2">
+                                                                <Mail className="w-4 h-4 text-[var(--blaze-neon)]" />
+                                                                {tester.email}
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4 text-xs text-white/60 font-mono">
+                                                            {new Date(tester.createdAt).toLocaleString()}
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <button
+                                                                onClick={() => handleRemoveBetaTester(tester.id)}
+                                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg text-xs font-bold text-red-300 transition-all hover:scale-105"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                                Eliminar
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : tab === 'users' ? (
+                                                (users as User[]).map(user => (
+                                                    <tr key={user.id} className={`hover:bg-white/10 transition-colors group ${user.isFrozen ? 'bg-blue-500/10 hover:bg-blue-500/20' : ''}`}>
+                                                        <td className="p-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${user.isAdmin ? 'bg-red-500/20 text-red-300' : user.isFrozen ? 'bg-blue-500/20 text-blue-300' : 'bg-white/10 text-white/60'}`}>
+                                                                    {user.isAdmin ? <Shield className="w-4 h-4" /> : user.isFrozen ? <span className="text-lg">❄️</span> : <UserIcon className="w-4 h-4" />}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-bold text-white text-sm flex items-center gap-2">
+                                                                        {user.nombre ? `${user.nombre} ${user.apellidos || ''}` : 'Sin nombre'}
+                                                                        {user.isFrozen && <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded uppercase font-black">Congelado</span>}
+                                                                    </div>
+                                                                    <div className="text-xs text-white/60 font-mono">{user.email}</div>
+                                                                    {user.dni && <div className="text-[10px] text-white/40 uppercase tracking-wide mt-0.5">DNI: {user.dni}</div>}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <span className="font-mono font-bold text-[var(--zoin-gold)] text-lg tracking-tight">
+                                                                {Number(user.Zoins).toFixed(2)}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <button
+                                                                    onClick={() => setEditingUser(user)}
+                                                                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-lg text-xs font-bold text-white transition-all hover:scale-105"
+                                                                >
+                                                                    <Edit className="w-3 h-3" />
+                                                                    Editar
+                                                                </button>
+                                                                {user.isFrozen && (
+                                                                    <button
+                                                                        onClick={() => handleUnfreeze(user.id)}
+                                                                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-lg text-xs font-bold text-blue-300 transition-all hover:scale-105"
+                                                                    >
+                                                                        🔓 Descongelar
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                (scores as Score[]).map(score => (
+                                                    <tr key={score.id} className="hover:bg-white/10 transition-colors">
+                                                        <td className="p-4 text-sm font-bold text-white uppercase tracking-wider">{score.game}</td>
+                                                        <td className="p-4">
+                                                            <div className="text-sm font-bold text-white">{score.user.email}</div>
+                                                            <div className="text-xs text-white/60">{score.user.nombre || 'Anon'} {score.user.apellidos || ''}</div>
+                                                        </td>
+                                                        <td className="p-4 text-right font-mono font-bold text-white text-lg">
+                                                            {score.amount}
+                                                        </td>
+                                                        <td className="p-4 text-right text-xs text-white/60 font-mono">
+                                                            {new Date(score.createdAt).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
+
+                            {/* Pagination Controls (Only for Scores tab) */}
+                            {tab === 'scores' && (
+                                <div className="flex items-center justify-between px-6 py-4 bg-black/10 border-t border-white/5">
+                                    <div className="text-xs font-bold text-white/60">
+                                        Mostrando {((rankingPage - 1) * 20) + 1}-{Math.min(rankingPage * 20, rankingTotalItems)} de {rankingTotalItems}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setRankingPage(p => Math.max(1, p - 1))}
+                                            disabled={rankingPage === 1 || loading}
+                                            className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50 text-xs font-bold text-white transition-all"
+                                        >
+                                            Anterior
+                                        </button>
+                                        <button
+                                            onClick={() => setRankingPage(p => Math.min(rankingTotalPages, p + 1))}
+                                            disabled={rankingPage === rankingTotalPages || loading}
+                                            className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50 text-xs font-bold text-white transition-all"
+                                        >
+                                            Siguiente
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
-                </div>
             </main>
 
             {editingUser && (
@@ -474,7 +647,8 @@ export default function AdminPage() {
                     onClose={() => setEditingUser(null)}
                     onSave={handleUpdateZoins}
                 />
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

@@ -29,7 +29,7 @@ export class RankingScheduler {
         this.logger.log(`Processing rewards for period: ${firstDayOfPreviousMonth.toISOString()} - ${endOfPreviousMonth.toISOString()}`);
 
         // 2. Get Top Scores (Fetching 50 to ensure we cover ties at the 5th place boundary)
-        const game = 'neon-match';
+        const game = 'bloques-tropicales';
         const topScores = await this.prisma.score.findMany({
             where: {
                 game,

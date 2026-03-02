@@ -13,12 +13,10 @@ export declare class AuthController {
     }>;
     completeProfile(req: any, body: any): Promise<{
         id: string;
-        createdAt: Date;
         email: string;
         username: string;
-        googleId: string | null;
-        dni: string | null;
         password: string | null;
+        googleId: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -31,22 +29,22 @@ export declare class AuthController {
         lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         address: string | null;
         postalCode: string | null;
         city: string | null;
         province: string | null;
         affiliateName: string | null;
+        createdAt: Date;
         updatedAt: Date;
     }>;
     googleAuth(req: any): Promise<void>;
     changeUsername(req: any, username: string): Promise<{
         id: string;
-        createdAt: Date;
         email: string;
         username: string;
-        googleId: string | null;
-        dni: string | null;
         password: string | null;
+        googleId: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -59,22 +57,22 @@ export declare class AuthController {
         lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         address: string | null;
         postalCode: string | null;
         city: string | null;
         province: string | null;
         affiliateName: string | null;
+        createdAt: Date;
         updatedAt: Date;
     }>;
     googleAuthRedirect(req: any, res: any): Promise<void>;
     getProfile(req: any): Promise<{
         hasPassword: boolean;
         id: string;
-        createdAt: Date;
         email: string;
         username: string;
         googleId: string | null;
-        dni: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -87,11 +85,13 @@ export declare class AuthController {
         lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         address: string | null;
         postalCode: string | null;
         city: string | null;
         province: string | null;
         affiliateName: string | null;
+        createdAt: Date;
         updatedAt: Date;
     } | null>;
 }

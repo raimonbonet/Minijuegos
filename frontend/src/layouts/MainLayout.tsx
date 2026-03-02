@@ -4,6 +4,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
 import { apiRequest } from '../lib/api';
 import AuthModal from '../components/AuthModal';
+import { Footer } from '../components/Footer';
 
 export default function MainLayout() {
     const navigate = useNavigate();
@@ -51,7 +52,7 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--bg-deep)]">
+        <div className="min-h-screen bg-[var(--bg-deep)] flex flex-col">
             <Navbar
                 user={user}
                 onLoginClick={() => setIsAuthModalOpen(true)}
@@ -73,9 +74,12 @@ export default function MainLayout() {
 
             {/* Main Content Area */}
             {/* Add padding top to account for fixed navbar (h-16 = 4rem = 64px) */}
-            <div className="pt-16">
-                {/* Pass user and refreshUser to children via Outlet context */}
-                <Outlet context={{ user, refreshUser, setUser }} />
+            <div className="pt-16 flex-grow flex flex-col">
+                <main className="flex-grow flex flex-col">
+                    {/* Pass user and refreshUser to children via Outlet context */}
+                    <Outlet context={{ user, refreshUser, setUser }} />
+                </main>
+                <Footer />
             </div>
         </div>
     );

@@ -1,11 +1,9 @@
 
-import { useOutletContext, useNavigate } from 'react-router-dom';
-import { Check, X, Crown, Star, Sun, Shield } from 'lucide-react';
-import { apiRequest } from '../lib/api';
+import { useOutletContext } from 'react-router-dom';
+import { Check, Crown, Star, Sun, Shield } from 'lucide-react';
 
 export default function SubscriptionsPage() {
-    const { user, refreshUser } = useOutletContext<any>();
-    const navigate = useNavigate();
+    const { user } = useOutletContext<any>();
 
     const plans = [
         {

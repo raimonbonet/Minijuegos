@@ -15,6 +15,13 @@ export class UsersService {
         });
     }
 
+    async isBetaTester(email: string): Promise<boolean> {
+        const betaTester = await this.prisma.betaTester.findUnique({
+            where: { email },
+        });
+        return !!betaTester;
+    }
+
     async findOneByUsername(username: string): Promise<User | null> {
         return this.prisma.user.findUnique({
             where: { username },

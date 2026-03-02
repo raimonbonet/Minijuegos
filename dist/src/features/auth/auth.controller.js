@@ -25,7 +25,7 @@ let AuthController = class AuthController {
         return this.authService.login(req.user);
     }
     async register(body) {
-        return this.authService.register(body.email, body.password, body.username);
+        return this.authService.register(body.email, body.password, body.username, body.origin);
     }
     async verify(token) {
         return this.authService.verifyUser(token);

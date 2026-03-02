@@ -25,7 +25,7 @@ export class EmailService {
     async sendMail(to: string, subject: string, html: string) {
         try {
             const info = await this.transporter.sendMail({
-                from: process.env.SMTP_FROM || '"No Reply" <noreply@example.com>',
+                from: process.env.SMTP_FROM || '"Zooplay" <info@zooplay.es>',
                 to,
                 subject,
                 html,
@@ -40,23 +40,23 @@ export class EmailService {
     }
 
     async sendWelcomeEmail(to: string, username: string) {
-        const subject = 'Welcome to Our Platform!';
+        const subject = '¡Bienvenido a Zooplay!';
         const html = `
-            <h1>Welcome, ${username}!</h1>
-            <p>Thank you for registering with us.</p>
-            <p>We are excited to have you on board.</p>
+            <h1>¡Hola, ${username}!</h1>
+            <p>Gracias por registrarte y unirte a la diversión.</p>
+            <p>Estamos emocionados de tenerte con nosotros en la arena de juegos.</p>
         `;
         return this.sendMail(to, subject, html);
     }
 
-    async sendVerificationEmail(to: string, username: string, token: string) {
-        const url = `http://localhost:5173/complete-profile?token=${token}`;
-        const subject = 'Verify your Account';
+    async sendVerificationEmail(to: string, username: string, token: string, origin: string = 'http://localhost:5173') {
+        const url = `${origin}/complete-profile?token=${token}`;
+        const subject = 'Verifica tu cuenta en Zooplay';
         const html = `
-            <h1>Hello ${username},</h1>
-            <p>Please click the link below to verify your account and complete your profile:</p>
-            <a href="${url}">Verify Account</a>
-            <p>Or paste this link in your browser: ${url}</p>
+            <h1>¡Hola ${username}!</h1>
+            <p>Por favor, haz clic en el siguiente enlace para verificar tu cuenta y completar tu perfil de jugador:</p>
+            <a href="${url}" style="display: inline-block; padding: 10px 20px; background-color: #fbbf24; color: #1e1e1e; text-decoration: none; font-weight: bold; border-radius: 5px; margin-top: 10px;">Verificar Cuenta</a>
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">O pega este enlace en tu navegador: <br/>${url}</p>
         `;
         return this.sendMail(to, subject, html);
     }

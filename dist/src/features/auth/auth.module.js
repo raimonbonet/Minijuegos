@@ -19,6 +19,7 @@ const local_strategy_1 = require("./strategies/local.strategy");
 const google_strategy_1 = require("./strategies/google.strategy");
 const wallet_module_1 = require("../wallet/wallet.module");
 const email_module_1 = require("../../shared/email/email.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -28,6 +29,7 @@ exports.AuthModule = AuthModule = __decorate([
             users_module_1.UsersModule,
             wallet_module_1.WalletModule,
             email_module_1.EmailModule,
+            notifications_module_1.NotificationsModule,
             passport_1.PassportModule,
             jwt_1.JwtModule.registerAsync({
                 imports: [config_1.ConfigModule],

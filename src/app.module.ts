@@ -12,6 +12,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
 import { AdminModule } from './features/admin/admin.module';
 import { ScoresModule } from './features/scores/scores.module';
 import { MarketModule } from './features/market/market.module';
+import { NotificationsModule } from './features/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MarketModule } from './features/market/market.module';
     AdminModule,
     ScoresModule,
     MarketModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { WalletService } from '../wallet/wallet.service';
 import { EmailService } from '../../shared/email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class AuthService {
         private jwtService: JwtService,
         private walletService: WalletService,
         private emailService: EmailService,
+        private notificationsService: NotificationsService,
     ) { }
 
     async validateUser(email: string, pass: string): Promise<any> {
@@ -49,6 +51,16 @@ export class AuthService {
                 // Also update profile if needed? Maybe not.
             } else {
                 console.log('Creating new Google user...');
+
+                // Enforce beta tester system
+                const requireBetaTester = process.env.REQUIRE_BETA_TESTER !== 'false';
+                if (requireBetaTester) {
+                    const isBetaTester = await this.usersService.isBetaTester(req.user.email);
+                    if (!isBetaTester) {
+                        throw new InternalServerErrorException('La plataforma está en fase beta exclusiva. Tu correo no está autorizado.');
+                    }
+                }
+
                 // Create user if it doesn't exist
                 user = await this.usersService.create({
                     email: req.user.email,
@@ -63,6 +75,9 @@ export class AuthService {
                 // Initialize wallet for new user
                 console.log('Creating wallet for new user:', user.id);
                 await this.walletService.createWallet(user.id);
+
+                // Welcome email in Spanish
+                await this.emailService.sendWelcomeEmail(user.email, user.nombre || user.username || 'Usuario');
             }
         } else if (!user.profileCompleted) {
             user = await this.usersService.updateProfile(user.id, { profileCompleted: true });
@@ -84,11 +99,20 @@ export class AuthService {
         return { ...result, hasPassword: !!password };
     }
 
-    async register(email: string, pass: string, username: string) {
+    async register(email: string, pass: string, username: string, origin: string = 'http://localhost:5173') {
         // Check if user already exists
         const existingUser = await this.usersService.findOneByEmail(email);
         if (existingUser) {
             throw new InternalServerErrorException('User already exists');
+        }
+
+        // Enforce beta tester system
+        const requireBetaTester = process.env.REQUIRE_BETA_TESTER !== 'false';
+        if (requireBetaTester) {
+            const isBetaTester = await this.usersService.isBetaTester(email);
+            if (!isBetaTester) {
+                throw new InternalServerErrorException('La plataforma está en fase beta exclusiva. Tu correo no está autorizado.');
+            }
         }
 
         const hashedPassword = await bcrypt.hash(pass, 10);
@@ -104,7 +128,7 @@ export class AuthService {
         const token = this.jwtService.sign(verificationPayload, { expiresIn: '24h' });
 
         // Send Verification Email
-        await this.emailService.sendVerificationEmail(email, username, token);
+        await this.emailService.sendVerificationEmail(email, username, token, origin);
 
         return { message: 'Verification email sent' };
     }
@@ -159,6 +183,32 @@ export class AuthService {
         if (existingUser && existingUser.id !== userId) {
             throw new InternalServerErrorException('El nombre de usuario ya está en uso');
         }
+
+        // Process affiliate name if provided
+        if (data.affiliateName) {
+            const affiliateUser = await this.usersService.findOneByUsername(data.affiliateName);
+
+            if (!affiliateUser) {
+                throw new InternalServerErrorException('El nombre de afiliado no existe. Por favor, revísalo o déjalo en blanco.');
+            }
+            if (affiliateUser.id === userId) {
+                throw new InternalServerErrorException('No puedes usar tu propio nombre como afiliado.');
+            }
+
+            // Grant 10 free games explicitly
+            await this.usersService.update(affiliateUser.id, {
+                extraGames: affiliateUser.extraGames + 10
+            });
+
+            // Send notification to the affiliate
+            await this.notificationsService.createNotification(
+                affiliateUser.id,
+                '🎁 ¡Recompensa de Afiliado!',
+                `El usuario ${data.username} se ha registrado con tu alias de recomendación. Hemos añadido 10 partidas gratuitas a tu cuenta.\n\n¡Gracias por ayudarnos a hacer la comunidad de Zooplay más grande!`,
+                'PROMO'
+            );
+        }
+
         return this.usersService.updateProfile(userId, {
             ...data,
             profileCompleted: true

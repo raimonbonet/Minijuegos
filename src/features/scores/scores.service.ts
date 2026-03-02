@@ -11,7 +11,7 @@ export class ScoresService {
         private usersService: UsersService
     ) { }
 
-    async create(userId: string, amount: number, game: string = 'neon-match', zoins: number = 0) {
+    async create(userId: string, amount: number, game: string = 'bloques-tropicales', zoins: number = 0) {
         // 1. Check Daily Limit
         const canPlay = await this.usersService.canPlay(userId);
         if (!canPlay) {
@@ -67,7 +67,7 @@ export class ScoresService {
         });
     }
 
-    async getTop(game: string = 'neon-match') {
+    async getTop(game: string = 'bloques-tropicales') {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 

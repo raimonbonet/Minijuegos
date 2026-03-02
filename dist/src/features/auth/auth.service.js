@@ -48,17 +48,20 @@ const jwt_1 = require("@nestjs/jwt");
 const users_service_1 = require("../users/users.service");
 const wallet_service_1 = require("../wallet/wallet.service");
 const email_service_1 = require("../../shared/email/email.service");
+const notifications_service_1 = require("../notifications/notifications.service");
 const bcrypt = __importStar(require("bcrypt"));
 let AuthService = class AuthService {
     usersService;
     jwtService;
     walletService;
     emailService;
-    constructor(usersService, jwtService, walletService, emailService) {
+    notificationsService;
+    constructor(usersService, jwtService, walletService, emailService, notificationsService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
         this.walletService = walletService;
         this.emailService = emailService;
+        this.notificationsService = notificationsService;
     }
     async validateUser(email, pass) {
         const user = await this.usersService.findOneByEmail(email);
@@ -89,6 +92,13 @@ let AuthService = class AuthService {
             }
             else {
                 console.log('Creating new Google user...');
+                const requireBetaTester = process.env.REQUIRE_BETA_TESTER !== 'false';
+                if (requireBetaTester) {
+                    const isBetaTester = await this.usersService.isBetaTester(req.user.email);
+                    if (!isBetaTester) {
+                        throw new common_1.InternalServerErrorException('La plataforma está en fase beta exclusiva. Tu correo no está autorizado.');
+                    }
+                }
                 user = await this.usersService.create({
                     email: req.user.email,
                     googleId: req.user.googleId,
@@ -100,6 +110,7 @@ let AuthService = class AuthService {
                 isNewUser = true;
                 console.log('Creating wallet for new user:', user.id);
                 await this.walletService.createWallet(user.id);
+                await this.emailService.sendWelcomeEmail(user.email, user.nombre || user.username || 'Usuario');
             }
         }
         else if (!user.profileCompleted) {
@@ -120,10 +131,17 @@ let AuthService = class AuthService {
         const { password, ...result } = user;
         return { ...result, hasPassword: !!password };
     }
-    async register(email, pass, username) {
+    async register(email, pass, username, origin = 'http://localhost:5173') {
         const existingUser = await this.usersService.findOneByEmail(email);
         if (existingUser) {
             throw new common_1.InternalServerErrorException('User already exists');
+        }
+        const requireBetaTester = process.env.REQUIRE_BETA_TESTER !== 'false';
+        if (requireBetaTester) {
+            const isBetaTester = await this.usersService.isBetaTester(email);
+            if (!isBetaTester) {
+                throw new common_1.InternalServerErrorException('La plataforma está en fase beta exclusiva. Tu correo no está autorizado.');
+            }
         }
         const hashedPassword = await bcrypt.hash(pass, 10);
         const verificationPayload = {
@@ -133,7 +151,7 @@ let AuthService = class AuthService {
             type: 'verification'
         };
         const token = this.jwtService.sign(verificationPayload, { expiresIn: '24h' });
-        await this.emailService.sendVerificationEmail(email, username, token);
+        await this.emailService.sendVerificationEmail(email, username, token, origin);
         return { message: 'Verification email sent' };
     }
     async verifyUser(token) {
@@ -169,6 +187,19 @@ let AuthService = class AuthService {
         if (existingUser && existingUser.id !== userId) {
             throw new common_1.InternalServerErrorException('El nombre de usuario ya está en uso');
         }
+        if (data.affiliateName) {
+            const affiliateUser = await this.usersService.findOneByUsername(data.affiliateName);
+            if (!affiliateUser) {
+                throw new common_1.InternalServerErrorException('El nombre de afiliado no existe. Por favor, revísalo o déjalo en blanco.');
+            }
+            if (affiliateUser.id === userId) {
+                throw new common_1.InternalServerErrorException('No puedes usar tu propio nombre como afiliado.');
+            }
+            await this.usersService.update(affiliateUser.id, {
+                extraGames: affiliateUser.extraGames + 10
+            });
+            await this.notificationsService.createNotification(affiliateUser.id, '🎁 ¡Recompensa de Afiliado!', `El usuario ${data.username} se ha registrado con tu alias de recomendación. Hemos añadido 10 partidas gratuitas a tu cuenta.\n\n¡Gracias por ayudarnos a hacer la comunidad de Zooplay más grande!`, 'PROMO');
+        }
         return this.usersService.updateProfile(userId, {
             ...data,
             profileCompleted: true
@@ -191,6 +222,7 @@ exports.AuthService = AuthService = __decorate([
     __metadata("design:paramtypes", [users_service_1.UsersService,
         jwt_1.JwtService,
         wallet_service_1.WalletService,
-        email_service_1.EmailService])
+        email_service_1.EmailService,
+        notifications_service_1.NotificationsService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

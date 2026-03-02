@@ -24,6 +24,12 @@ let UsersService = class UsersService {
             include: { wallet: true }
         });
     }
+    async isBetaTester(email) {
+        const betaTester = await this.prisma.betaTester.findUnique({
+            where: { email },
+        });
+        return !!betaTester;
+    }
     async findOneByUsername(username) {
         return this.prisma.user.findUnique({
             where: { username },

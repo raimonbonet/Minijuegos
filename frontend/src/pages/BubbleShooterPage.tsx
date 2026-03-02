@@ -62,8 +62,8 @@ const BubbleShooterPage = () => {
     const [isGameOver, setIsGameOver] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [, setBubbles] = useState<Bubble[]>([]); // Only for triggering re-renders if needed, largely handled by ref/canvas
-    const [nextBubbleColor, setNextBubbleColor] = useState(BUBBLE_COLORS[0]);
-    const [currentBubbleColor, setCurrentBubbleColor] = useState(BUBBLE_COLORS[0]);
+    const [, setNextBubbleColor] = useState(BUBBLE_COLORS[0]);
+    const [, setCurrentBubbleColor] = useState(BUBBLE_COLORS[0]);
     const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
 
     // Grid State

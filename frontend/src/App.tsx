@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import DashboardPage from './pages/DashboardPage';
-import NeonMatchPage from './pages/NeonMatchPage';
+import TropicalBlocksPage from './pages/TropicalBlocksPage';
 import BubbleShooterPage from './pages/BubbleShooterPage';
 import AdminPage from './pages/AdminPage';
 import ProfilePage from './pages/ProfilePage';
@@ -11,6 +11,9 @@ import SubscriptionsPage from './pages/SubscriptionsPage';
 import RankingPage from './pages/RankingPage';
 import AdminRoute from './components/AdminRoute';
 import MainLayout from './layouts/MainLayout';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsConditionsPage from './pages/TermsConditionsPage';
+import ContactPage from './pages/ContactPage';
 
 // Simple protected route wrapper
 const ProtectedRoute = ({ children }: { children: React.JSX.Element }) => {
@@ -47,10 +50,10 @@ function App() {
             element={<DashboardPage />}
           />
           <Route
-            path="/game/neon-match"
+            path="/game/bloques-tropicales"
             element={
               <ProtectedRoute>
-                <NeonMatchPage />
+                <TropicalBlocksPage />
               </ProtectedRoute>
             }
           />
@@ -82,6 +85,26 @@ function App() {
             path="/ranking"
             element={
               <RankingPage />
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <PrivacyPolicyPage />
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <TermsConditionsPage />
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <ProtectedRoute>
+                <ContactPage />
+              </ProtectedRoute>
             }
           />
           <Route

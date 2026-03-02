@@ -14,12 +14,10 @@ export declare class UsersController {
         province?: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
         email: string;
         username: string;
-        googleId: string | null;
-        dni: string | null;
         password: string | null;
+        googleId: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -32,11 +30,13 @@ export declare class UsersController {
         lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         address: string | null;
         postalCode: string | null;
         city: string | null;
         province: string | null;
         affiliateName: string | null;
+        createdAt: Date;
         updatedAt: Date;
     }>;
     changePassword(req: any, body: {

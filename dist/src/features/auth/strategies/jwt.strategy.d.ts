@@ -10,11 +10,9 @@ export declare class JwtStrategy extends JwtStrategy_base {
     validate(payload: any): Promise<{
         email: any;
         id: string;
-        createdAt: Date;
         username: string;
-        googleId: string | null;
-        dni: string | null;
         password: string | null;
+        googleId: string | null;
         nombre: string | null;
         apellidos: string | null;
         fechaNacimiento: Date | null;
@@ -27,11 +25,13 @@ export declare class JwtStrategy extends JwtStrategy_base {
         lastDailyReset: Date;
         profileCompleted: boolean;
         isFrozen: boolean;
+        dni: string | null;
         address: string | null;
         postalCode: string | null;
         city: string | null;
         province: string | null;
         affiliateName: string | null;
+        createdAt: Date;
         updatedAt: Date;
         userId: any;
     } | null>;

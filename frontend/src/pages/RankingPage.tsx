@@ -104,7 +104,7 @@ export default function RankingPage() {
                             className="bg-[var(--bg-deep)] text-[var(--text-main)] font-bold text-sm rounded-lg border border-[var(--text-main)]/10 px-3 py-2 outline-none focus:border-[var(--text-main)] transition-colors w-full md:w-48"
                         >
                             <option value="">Todos los Juegos</option>
-                            <option value="neon-match">Neon Match</option>
+                            <option value="bloques-tropicales">Bloques Tropicales</option>
                             {/* Add more games here as they are created */}
                         </select>
                     </div>

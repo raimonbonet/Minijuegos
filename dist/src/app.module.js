@@ -21,6 +21,7 @@ const prisma_module_1 = require("./shared/prisma/prisma.module");
 const admin_module_1 = require("./features/admin/admin.module");
 const scores_module_1 = require("./features/scores/scores.module");
 const market_module_1 = require("./features/market/market.module");
+const notifications_module_1 = require("./features/notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -41,6 +42,7 @@ exports.AppModule = AppModule = __decorate([
             admin_module_1.AdminModule,
             scores_module_1.ScoresModule,
             market_module_1.MarketModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

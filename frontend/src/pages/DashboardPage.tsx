@@ -233,14 +233,14 @@ export default function DashboardPage() {
 
                     {/* Games Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Neon Match Card */}
+                        {/* Bloques Tropicales Card */}
                         <div
-                            onClick={() => navigate('/game/neon-match')}
+                            onClick={() => navigate('/game/bloques-tropicales')}
                             className="relative w-full aspect-[16/9] rounded-3xl overflow-hidden cursor-pointer group shadow-2xl transition-all hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,159,28,0.3)] border-4 border-[var(--blaze-neon)]"
                         >
                             <img
                                 src="/tropical_match3_banner.png"
-                                alt="Neon Match Tropical"
+                                alt="Bloques Tropicales"
                                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />

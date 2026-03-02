@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
-import { User, CreditCard, ShoppingBag, Shield, BarChart2, Edit2, Save } from 'lucide-react';
+import { User, CreditCard, ShoppingBag, Shield, BarChart2, Edit2, Save, Mail } from 'lucide-react';
 import { apiRequest } from '../lib/api';
 
 // --- Sub-components (will be refactored later if too large) ---
@@ -211,7 +211,7 @@ const ProfileSubscription = ({ user }: { user: any }) => (
     </div>
 );
 
-const ProfileOrders = ({ user }: { user: any }) => {
+const ProfileOrders = ({ }: { user: any }) => {
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -458,16 +458,91 @@ const ProfileStats = ({ user }: { user: any }) => {
 };
 
 
+const ProfileInbox = ({ }: { user: any }) => {
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchNotifications();
+    }, []);
+
+    const fetchNotifications = async () => {
+        try {
+            const data = await apiRequest('/notifications');
+            setNotifications(data);
+        } catch (error) {
+            console.error("Failed to load notifications", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRead = async (id: string, isRead: boolean) => {
+        if (isRead) return;
+        try {
+            await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+        } catch (error) {
+            console.error("Failed to mark as read", error);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-black text-[var(--text-main)] uppercase italic flex items-center gap-3">
+                <Mail className="w-6 h-6" /> Buzón
+            </h2>
+
+            {loading ? (
+                <div className="text-center py-8 opacity-50 font-bold">Cargando mensajes...</div>
+            ) : notifications.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-[var(--text-main)]/20 rounded-2xl bg-white/30">
+                    <Mail className="w-12 h-12 text-[var(--text-main)]/30 mx-auto mb-4" />
+                    <p className="text-[var(--text-main)]/60 font-mono font-bold">No tienes mensajes nuevos.</p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {notifications.map((notif) => (
+                        <div
+                            key={notif.id}
+                            onClick={() => handleRead(notif.id, notif.isRead)}
+                            className={`p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm
+                                ${notif.isRead
+                                    ? 'bg-white/40 border-[var(--text-main)]/10 opacity-70'
+                                    : 'bg-white border-[var(--blaze-neon)]/50 shadow-md hover:scale-[1.01]'
+                                }
+                            `}
+                        >
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-2">
+                                    {!notif.isRead && <div className="w-2 h-2 rounded-full bg-[var(--blaze-neon)] animate-pulse" />}
+                                    <h3 className="font-black text-[var(--text-main)] uppercase tracking-wider">{notif.title}</h3>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-main)]/50 font-mono">
+                                    {new Date(notif.createdAt).toLocaleDateString()}
+                                </span>
+                            </div>
+                            <p className="text-sm font-medium text-[var(--text-main)]/80 leading-relaxed whitespace-pre-wrap">
+                                {notif.message}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 // --- Main Page Component ---
 
 export default function ProfilePage() {
     const { user, refreshUser } = useOutletContext<any>();
     const [searchParams] = useSearchParams();
-    const [activeTab, setActiveTab] = useState<'data' | 'subscription' | 'orders' | 'security' | 'stats'>('data');
+    const [activeTab, setActiveTab] = useState<'data' | 'subscription' | 'orders' | 'security' | 'stats' | 'inbox'>('data');
 
     useEffect(() => {
         const tab = searchParams.get('tab');
-        if (tab && ['data', 'subscription', 'orders', 'security', 'stats'].includes(tab)) {
+        if (tab && ['data', 'subscription', 'orders', 'security', 'stats', 'inbox'].includes(tab)) {
             setActiveTab(tab as any);
         }
     }, [searchParams]);
@@ -494,6 +569,7 @@ export default function ProfilePage() {
                     <nav className="space-y-2">
                         {[
                             { id: 'data', label: 'Mis Datos', icon: User },
+                            { id: 'inbox', label: 'Buzón', icon: Mail },
                             { id: 'subscription', label: 'Mi Suscripción', icon: CreditCard },
                             { id: 'orders', label: 'Mis Pedidos', icon: ShoppingBag },
                             { id: 'security', label: 'Seguridad', icon: Shield },
@@ -535,6 +611,7 @@ export default function ProfilePage() {
 
                         <div className="relative z-10 animate-fade-in">
                             {activeTab === 'data' && <ProfileData user={user} refreshUser={refreshUser} />}
+                            {activeTab === 'inbox' && <ProfileInbox user={user} />}
                             {activeTab === 'subscription' && <ProfileSubscription user={user} />}
                             {activeTab === 'orders' && <ProfileOrders user={user} />}
                             {activeTab === 'security' && <ProfileSecurity user={user} refreshUser={refreshUser} />}

@@ -26,7 +26,12 @@ export default function TermsConditionsPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-xl font-semibold mb-3 text-[var(--text-primary)]">5. Modificaciones</h2>
+                    <h2 className="text-xl font-semibold mb-3 text-[var(--text-primary)]">5. Zoins y Economía del Juego</h2>
+                    <p>Los "Zoins" son la moneda virtual interna exclusiva de Zooplay. Los Zoins no tienen valor monetario real, no son una moneda de curso legal y no pueden ser canjeados, vendidos ni transferidos por dinero real ni bienes fuera de la plataforma, salvo en los casos y usos explícitamente autorizados y descritos dentro del propio juego. Zooplay se reserva el derecho de modificar, regular, suspender o eliminar esta moneda virtual en cualquier momento sin previo aviso ni responsabilidad alguna frente a los usuarios.</p>
+                </section>
+
+                <section>
+                    <h2 className="text-xl font-semibold mb-3 text-[var(--text-primary)]">6. Modificaciones</h2>
                     <p>Zooplay puede revisar estos Términos de Servicio para su sitio web en cualquier momento sin previo aviso. Al utilizar este sitio web, usted acepta estar sujeto a la versión actual de estos Términos y Condiciones.</p>
                 </section>
             </div>

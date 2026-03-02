@@ -1,8 +1,14 @@
 const getApiUrl = () => {
+    // Vite uses import.meta.env instead of process.env for the frontend.
+    // Railway will need to have VITE_API_URL configured to point to the backend.
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+
+    // Fallback based on origin (assuming frontend & backend share domain like on Railway)
     if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-        return 'https://zooplay.es';
+        return window.location.origin;
     }
+
+    // Local dev fallback
     return 'http://localhost:3000';
 };
 

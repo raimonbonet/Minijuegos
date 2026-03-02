@@ -131,7 +131,7 @@ let AuthService = class AuthService {
         const { password, ...result } = user;
         return { ...result, hasPassword: !!password };
     }
-    async register(email, pass, username, origin = 'https://zooplay.es') {
+    async register(email, pass, username, origin = process.env.FRONTEND_URL || 'http://localhost:5173') {
         const existingUser = await this.usersService.findOneByEmail(email);
         if (existingUser) {
             throw new common_1.InternalServerErrorException('User already exists');

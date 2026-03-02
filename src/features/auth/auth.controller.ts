@@ -56,7 +56,7 @@ export class AuthController {
 
             // Redirect to frontend with token
             // Ensure no trailing slash
-            let frontendUrl = process.env.FRONTEND_URL || 'https://zooplay.es';
+            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
             if (frontendUrl.endsWith('/')) {
                 frontendUrl = frontendUrl.slice(0, -1);
             }
@@ -76,7 +76,7 @@ export class AuthController {
         } catch (error) {
             console.error('Error in googleAuthRedirect:', error);
             // Redirect to frontend login with error
-            let frontendUrl = process.env.FRONTEND_URL || 'https://zooplay.es';
+            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
             if (frontendUrl.endsWith('/')) {
                 frontendUrl = frontendUrl.slice(0, -1);
             }

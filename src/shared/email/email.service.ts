@@ -49,7 +49,7 @@ export class EmailService {
         return this.sendMail(to, subject, html);
     }
 
-    async sendVerificationEmail(to: string, username: string, token: string, origin: string = 'http://localhost:5173') {
+    async sendVerificationEmail(to: string, username: string, token: string, origin: string = 'https://zooplay.es') {
         const url = `${origin}/complete-profile?token=${token}`;
         const subject = 'Verifica tu cuenta en Zooplay';
         const html = `

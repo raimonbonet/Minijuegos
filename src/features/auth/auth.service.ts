@@ -99,7 +99,7 @@ export class AuthService {
         return { ...result, hasPassword: !!password };
     }
 
-    async register(email: string, pass: string, username: string, origin: string = 'http://localhost:5173') {
+    async register(email: string, pass: string, username: string, origin: string = 'https://zooplay.es') {
         // Check if user already exists
         const existingUser = await this.usersService.findOneByEmail(email);
         if (existingUser) {

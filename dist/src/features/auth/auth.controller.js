@@ -50,7 +50,7 @@ let AuthController = class AuthController {
         try {
             const result = await this.authService.googleLogin(req);
             console.log('AuthService.googleLogin success. New User:', result.isNewUser);
-            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            let frontendUrl = process.env.FRONTEND_URL || 'https://zooplay.es';
             if (frontendUrl.endsWith('/')) {
                 frontendUrl = frontendUrl.slice(0, -1);
             }
@@ -67,7 +67,7 @@ let AuthController = class AuthController {
         }
         catch (error) {
             console.error('Error in googleAuthRedirect:', error);
-            let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            let frontendUrl = process.env.FRONTEND_URL || 'https://zooplay.es';
             if (frontendUrl.endsWith('/')) {
                 frontendUrl = frontendUrl.slice(0, -1);
             }

@@ -19,7 +19,7 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
         super({
             clientID: configService.get('GOOGLE_CLIENT_ID') || 'dummy',
             clientSecret: configService.get('GOOGLE_CLIENT_SECRET') || 'dummy',
-            callbackURL: configService.get('GOOGLE_CALLBACK_URL') || 'http://localhost:3000/auth/google/callback',
+            callbackURL: configService.get('GOOGLE_CALLBACK_URL') || 'https://zooplay.es/auth/google/callback',
             scope: ['email', 'profile'],
         });
     }
